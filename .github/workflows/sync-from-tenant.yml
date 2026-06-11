@@ -18,7 +18,7 @@ jobs:
         uses: engswee/flashpipe-action/sync@v1
         with:
           # Tenant URLs & Auth
-          tmn-host: "90cfb10ftrial.integrationsuite-trial01.cfapps.us10-001.hana.ondemand.com" # Just the host name (No https://)
+          tmn-host: "90cfb10ftrial.it-spaces.cfapps.us10-001.hana.ondemand.com" # Just the host name (No https://)
           oauth-host: "90cfb10ftrial.authentication.us10.hana.ondemand.com"           # From your Service Key (uaa.url host)
           oauth-clientid: ${{ secrets.CPI_CLIENT_ID }}
           oauth-clientsecret: ${{ secrets.CPI_CLIENT_SECRET }}
