@@ -14,15 +14,16 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
       
-      - name: Sync Integration Packages using FlashPipe Action
+     - name: Sync Integration Packages using Basic Auth
         uses: engswee/flashpipe-action/sync@v1
         with:
-          # Tenant URLs & Auth
-          tmn-host: "90cfb10ftrial.integrationsuite-trial01.cfapps.us10-001.hana.ondemand.com" # Just the host name (No https://)
-          oauth-host: ${{ secrets.CPI_TOKEN_URL }}           # From your Service Key (uaa.url host)
-          oauth-clientid: ${{ secrets.CPI_CLIENT_ID }}
-          oauth-clientsecret: ${{ secrets.CPI_CLIENT_SECRET }}
+          # Tenant Configuration (Ensure NO https:// prefixes are present)
+          tmn-host: "90cfb10ftrial.integrationsuite-trial01.cfapps.us10-001.hana.ondemand.com"
+          
+          # Basic Authentication Setup for BTP Trial accounts
+          tmn-userid: ${{ secrets.CPI_USER }}
+          tmn-password: ${{ secrets.CPI_PASSWORD }}
           
           # Target Content Configuration
-          package-id: "Test_Package"         # Your SAP Integration Package ID
-          dir-git-repo: ${{ github.workspace }}            # Tells it where to save the files
+          package-id: "Test_Package"
+          dir-git-repo: ${{ github.workspace }}
