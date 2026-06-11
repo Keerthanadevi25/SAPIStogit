@@ -1,7 +1,7 @@
 name: Extract iFlows from Tenant to GitHub
 
 on:
-  workflow_dispatch:      # Allows manual trigger button execution
+  workflow_dispatch:      # This allows you to click a button to run it manually
   schedule:
     - cron: '0 22 * * 1-5' # Runs automatically every weekday at 10 PM UTC
 
@@ -9,22 +9,17 @@ jobs:
   sync-tenant-to-git:
     runs-on: ubuntu-latest
     container:
-      image: engswee/flashpipe:latest # Required underlying container framework
+      image: engswee/flashpipe:latest # FlashPipe container tool
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
       
-      - name: Sync Integration Packages using Restructured OAuth
-        uses: engswee/flashpipe-action/sync@v1
-        with:
-          # Clean Host Names Only (No https://)
-          tmn-host: "90cfb10ftrial.integrationsuite-trial01.cfapps.us10-001.hana.ondemand.com"
-          oauth-host: "90cfb10ftrial.authentication.us10.hana.ondemand.com"
-          
-          # Secrets mapped from GitHub settings
-          oauth-clientid: ${{ secrets.CPI_CLIENT_ID }}
-          oauth-clientsecret: ${{ secrets.CPI_CLIENT_SECRET }}
-          
-          # Target Configuration
-          package-id: "Test_Package"
-          dir-git-repo: ${{ github.workspace }}
+      - name: Sync Integration Packages
+        env:
+          GC_OAUTH_CLIENT_ID: ${{ secrets.CPI_CLIENT_ID }}
+          GC_OAUTH_CLIENT_SECRET: ${{ secrets.CPI_CLIENT_SECRET }}
+          GC_OAUTH_TOKEN_URL: "90cfb10ftrial.authentication.us10.hana.ondemand.com"
+          GC_TENANT_TMN_URL: "90cfb10ftrial.integrationsuite-trial01.cfapps.us10-001.hana.ondemand.com" # Replace with your TMN URL
+          GC_WORKSPACE: ${{ github.workspace }}
+        run: |
+          flashpipe sync-tenant-to-git --package-ids "Test_Package"
