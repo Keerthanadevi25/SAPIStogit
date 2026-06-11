@@ -14,7 +14,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
       
-     - name: Sync Integration Packages using Basic Auth
+      - name: Sync Integration Packages using Basic Auth
         uses: engswee/flashpipe-action/sync@v1
         with:
           # Tenant Configuration (Ensure NO https:// prefixes are present)
