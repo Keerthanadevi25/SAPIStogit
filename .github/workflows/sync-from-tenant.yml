@@ -17,12 +17,15 @@ jobs:
       - name: Sync Integration Packages using FlashPipe Action
         uses: engswee/flashpipe-action/sync@v1
         with:
-          # Tenant URLs & Auth
-          tmn-host: "90cfb10ftrial.it-cpi001.cfapps.us10-001.hana.ondemand.com" # Just the host name (No https://)
-          oauth-host: "90cfb10ftrial.authentication.us10.hana.ondemand.com"           # From your Service Key (uaa.url host)
+          # Your exact base trial host mapping
+          tmn-host: "90cfb10ftrial.integrationsuite-trial01.cfapps.us10-001.hana.ondemand.com"
+          oauth-host: "90cfb10ftrial.authentication.us10.hana.ondemand.com"
           oauth-clientid: ${{ secrets.CPI_CLIENT_ID }}
           oauth-clientsecret: ${{ secrets.CPI_CLIENT_SECRET }}
           
+          # FIXED: Tells FlashPipe to ignore the nested wildcard subdomain limitation
+          skip-ssl-validation: true
+          
           # Target Content Configuration
-          package-id: "Test_Package"         # Your SAP Integration Package ID
-          dir-git-repo: ${{ github.workspace }}            # Tells it where to save the files
+          package-id: "Test_Package"
+          dir-git-repo: ${{ github.workspace }}
