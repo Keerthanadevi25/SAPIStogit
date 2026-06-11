@@ -1,7 +1,7 @@
 name: Extract iFlows from Tenant to GitHub
 
 on:
-  workflow_dispatch:      # Allows you to click the button to run manually
+  workflow_dispatch:      # Allows manual trigger button execution
   schedule:
     - cron: '0 22 * * 1-5' # Runs automatically every weekday at 10 PM UTC
 
@@ -14,16 +14,17 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
       
-      - name: Sync Integration Packages using Basic Auth
+      - name: Sync Integration Packages using Restructured OAuth
         uses: engswee/flashpipe-action/sync@v1
         with:
-          # Tenant Configuration (Ensure NO https:// prefixes are present)
+          # Clean Host Names Only (No https://)
           tmn-host: "90cfb10ftrial.integrationsuite-trial01.cfapps.us10-001.hana.ondemand.com"
+          oauth-host: "90cfb10ftrial.authentication.us10.hana.ondemand.com"
           
-          # Basic Authentication Setup for BTP Trial accounts
-          tmn-userid: ${{ secrets.CPI_USER }}
-          tmn-password: ${{ secrets.CPI_PASSWORD }}
+          # Secrets mapped from GitHub settings
+          oauth-clientid: ${{ secrets.CPI_CLIENT_ID }}
+          oauth-clientsecret: ${{ secrets.CPI_CLIENT_SECRET }}
           
-          # Target Content Configuration
+          # Target Configuration
           package-id: "Test_Package"
           dir-git-repo: ${{ github.workspace }}
