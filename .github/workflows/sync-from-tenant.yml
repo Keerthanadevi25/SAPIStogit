@@ -12,7 +12,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # Pre-create the directory to eliminate any possible container mkdir restrictions
+      # Pre-create a standard directory folder to make saving files foolproof
       - name: Create local src directory
         run: mkdir -p src
 
@@ -22,8 +22,10 @@ jobs:
         with:
           command: integrationArtifactDownload
         env:
-          # Only pass the secure Service Key authentication via environment
+          # FIXED: Pass the authentication key normally
           PIPER_apiServiceKey: ${{ secrets.CPI_API_SERVICE_KEY }}
+          # FIXED: Inject parameters using the global JSON override string to force path resolution
+          PIPER_parametersJSON: '{"integrationFlowId":"Test_Integration_flow","integrationFlowVersion":"1.0.0","integrationContentPath":"./src"}'
 
       # STEP 2: Commit and push the downloaded files back to GitHub
       - name: Commit and Push Changes
