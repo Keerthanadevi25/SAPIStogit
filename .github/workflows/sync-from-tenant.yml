@@ -12,16 +12,18 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
+      # Pre-create the directory to eliminate any possible container mkdir restrictions
+      - name: Create local src directory
+        run: mkdir -p src
+
       # STEP 1: Download the iFlow bundle from SAP CPI
       - name: Pull iFlow Content via SAP Project Piper
         uses: SAP/project-piper-action@master
         with:
           command: integrationArtifactDownload
         env:
+          # Only pass the secure Service Key authentication via environment
           PIPER_apiServiceKey: ${{ secrets.CPI_API_SERVICE_KEY }}
-          PIPER_integrationFlowId: 'Test_Integration_flow' 
-          PIPER_integrationFlowVersion: '1.0.0' 
-          PIPER_workspace: 'src'
 
       # STEP 2: Commit and push the downloaded files back to GitHub
       - name: Commit and Push Changes
@@ -29,7 +31,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Check if there are any new files or changes to commit
           if [ -n "$(git status --porcelain)" ]; then
             git add .
             git commit -m "Automated Sync: Updated Test_Integration_flow from CPI Tenant"
