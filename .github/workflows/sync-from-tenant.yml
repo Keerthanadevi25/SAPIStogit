@@ -19,9 +19,11 @@ jobs:
           # FIXED: Used the exact official step name
           command: integrationArtifactDownload
         env:
-          # FIXED: Passed variables directly via OS env variables to avoid syntax breaks
           PIPER_apiServiceKey: ${{ secrets.CPI_API_SERVICE_KEY }}
-          PIPER_integrationFlowId: 'Test_Integration_flow'
+          # REPLACED: Ensure this matches the EXACT technical ID from your tenant metadata
+          PIPER_integrationFlowId: 'Test_Integration_flow' 
+          # ADDED: Explicitly define your target version (usually 'active' or '1.0.0')
+          PIPER_integrationFlowVersion: '1.0.0' 
 
       # STEP 2: Commit and push the downloaded files back to GitHub
       - name: Commit and Push Changes
