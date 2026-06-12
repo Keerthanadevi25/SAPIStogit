@@ -12,22 +12,41 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # Pre-create a standard directory folder to make saving files foolproof
-      - name: Create local src directory
-        run: mkdir -p src
-
-      # STEP 1: Download the iFlow bundle from SAP CPI
-      - name: Pull iFlow Content via SAP Project Piper
-        uses: SAP/project-piper-action@master
-        with:
-          command: integrationArtifactDownload
+      - name: Fetch OAuth Token and Download iFlow via API
         env:
-          # FIXED: Pass the authentication key normally
-          PIPER_apiServiceKey: ${{ secrets.CPI_API_SERVICE_KEY }}
-          # FIXED: Inject parameters using the global JSON override string to force path resolution
-          PIPER_parametersJSON: '{"integrationFlowId":"Test_Integration_flow","integrationFlowVersion":"1.0.0","integrationContentPath":"./src"}'
+          SERVICE_KEY: ${{ secrets.CPI_API_SERVICE_KEY }}
+        run: |
+          # 1. Parse your existing Service Key values using jq
+          CLIENT_ID=$(echo '$SERVICE_KEY' | jq -r '.uaa.clientid')
+          CLIENT_SECRET=$(echo '$SERVICE_KEY' | jq -r '.uaa.clientsecret')
+          TOKEN_URL=$(echo '$SERVICE_KEY' | jq -r '.uaa.tokenurl')
+          API_URL=$(echo '$SERVICE_KEY' | jq -r '.url')
 
-      # STEP 2: Commit and push the downloaded files back to GitHub
+          # 2. Request an access token from the SAP OAuth Server
+          echo "Fetching OAuth token..."
+          TOKEN_RESPONSE=$(curl -s -X POST "$TOKEN_URL?grant_type=client_credentials" \
+            -u "$CLIENT_ID:$CLIENT_SECRET")
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+
+          if [ "$ACCESS_TOKEN" = "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to retrieve access token. Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+
+          # 3. Create the destination directory
+          mkdir -p src
+
+          # 4. Call SAP OData API to fetch the iFlow bundle value and save as a ZIP archive
+          echo "Downloading iFlow archive..."
+          curl -s -L -X GET "$API_URL/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Integration_flow',Version='1.0.0')/\$value" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            --output src/Test_Integration_flow.zip
+
+          # 5. Extract the iFlow contents so changes are readable in Git text format
+          echo "Unpacking iFlow files..."
+          unzip -o src/Test_Integration_flow.zip -d src/Test_Integration_flow/
+          rm src/Test_Integration_flow.zip
+
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
