@@ -1,0 +1,5 @@
+steps:
+  integrationArtifactDownload:
+    integrationFlowId: 'Test_Integration_flow'
+    integrationFlowVersion: '1.0.0'
+    integrationContentPath: './src'
