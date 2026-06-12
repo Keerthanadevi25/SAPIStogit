@@ -15,7 +15,7 @@ jobs:
       - name: Pull iFlow Content via SAP Project Piper
         uses: SAP/project-piper-action@master
         with:
-          step-name: integrationArtifactGet
-          flags: |
-            --apiServiceKey '${{ secrets.CPI_API_SERVICE_KEY }}'
-            --integrationFlowId 'Test_Integration_flow'
+          # FIXED: Pass the required Piper command explicitly
+          command: integrationArtifactGet
+          # FIXED: Use the correct global JSON parameter flag to inject settings
+          flags: --stepConfigJSON '{"apiServiceKey":"${{ secrets.CPI_API_SERVICE_KEY }}","integrationFlowId":"Test_Integration_flow"}'
