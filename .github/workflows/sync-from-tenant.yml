@@ -16,15 +16,12 @@ jobs:
       - name: Pull iFlow Content via SAP Project Piper
         uses: SAP/project-piper-action@master
         with:
-          # FIXED: Used the exact official step name
           command: integrationArtifactDownload
         env:
           PIPER_apiServiceKey: ${{ secrets.CPI_API_SERVICE_KEY }}
-          # REPLACED: Ensure this matches the EXACT technical ID from your tenant metadata
           PIPER_integrationFlowId: 'Test_Integration_flow' 
-          # ADDED: Explicitly define your target version (usually 'active' or '1.0.0')
           PIPER_integrationFlowVersion: '1.0.0' 
-          PIPER_integrationContentPath: ${{ github.workspace }}
+          PIPER_workspace: 'src'
 
       # STEP 2: Commit and push the downloaded files back to GitHub
       - name: Commit and Push Changes
