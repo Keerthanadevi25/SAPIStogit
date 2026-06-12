@@ -12,10 +12,28 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
+      # STEP 1: Download the iFlow bundle from SAP CPI
       - name: Pull iFlow Content via SAP Project Piper
         uses: SAP/project-piper-action@master
         with:
-          # FIXED: Pass the required Piper command explicitly
-          command: integrationArtifactGet
-          # FIXED: Use the correct global JSON parameter flag to inject settings
-          flags: --stepConfigJSON '{"apiServiceKey":"${{ secrets.CPI_API_SERVICE_KEY }}","integrationFlowId":"Test_Integration_flow"}'
+          # FIXED: Used the exact official step name
+          command: integrationArtifactDownload
+        env:
+          # FIXED: Passed variables directly via OS env variables to avoid syntax breaks
+          PIPER_apiServiceKey: ${{ secrets.CPI_API_SERVICE_KEY }}
+          PIPER_integrationFlowId: 'Test_Integration_flow'
+
+      # STEP 2: Commit and push the downloaded files back to GitHub
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Check if there are any new files or changes to commit
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "Automated Sync: Updated Test_Integration_flow from CPI Tenant"
+            git push
+          else
+            echo "No changes found between CPI tenant and repository."
+          fi
