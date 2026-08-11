@@ -7,8 +7,8 @@ jobs:
   sync-content:
     runs-on: ubuntu-latest
     steps:
-    - name: Authenticate & Download Integration Content
-      env:
+      - name: Authenticate & Download Integration Content
+        env:
           TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}
           CLIENT_ID: ${{ secrets.DEV_CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.DEV_CLIENT_SECRET }}
