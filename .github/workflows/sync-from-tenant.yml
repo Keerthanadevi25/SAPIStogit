@@ -1,26 +1,4 @@
-name: Sync SAP Integration Content to GitHub
-
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 */6 * * *"   # Runs every 6 hours
-
-jobs:
-  sync-content:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout develop branch
-        uses: actions/checkout@v3
-        with:
-          ref: develop
-
-      - name: Install jq & unzip
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq unzip
-
-      - name: Authenticate & Download Integration Content
+- name: Authenticate & Download Integration Content
         env:
           TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}
           CLIENT_ID: ${{ secrets.DEV_CLIENT_ID }}
@@ -37,7 +15,7 @@ jobs:
 
           echo "Token received."
 
-          mkdir -p package/Test_Package/iflows
+          mkdir -p Packages/Test_Package/iflows
 
           echo "Fetching list of iFlows..."
           curl -s --location "$API_URL/IntegrationDesigntimeArtifacts" \
@@ -49,16 +27,8 @@ jobs:
 
             curl -s --location "$API_URL/IntegrationDesigntimeArtifacts('$ARTIFACT')/\$value" \
               --header "Authorization: Bearer $ACCESS_TOKEN" \
-              --output "package/mypackage/iflows/$ARTIFACT.zip"
+              --output "Packages/Test_Package/iflows/$ARTIFACT.zip"
 
-            unzip -o "package/mypackage/iflows/$ARTIFACT.zip" -d "package/mypackage/iflows/$ARTIFACT"
+            unzip -o "Packages/Test_Package/iflows/$ARTIFACT.zip" \
+              -d "Packages/Test_Package/iflows/$ARTIFACT"
           done
-
-      - name: Commit & Push Changes
-        run: |
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
-
-          git add .
-          git commit -m "Auto-sync from SAP BTP Cloud Integration" || echo "No changes to commit"
-          git push origin developer
