@@ -1,59 +1,64 @@
-name: Extract iFlows from Tenant to GitHub
+name: Sync SAP Integration Content to GitHub
 
 on:
-  workflow_dispatch:      # Allows you to click the button to run manually
-  
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"   # Runs every 6 hours
+
 jobs:
-  sync-tenant-to-git:
+  sync-content:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
+      - name: Checkout develop branch
+        uses: actions/checkout@v3
+        with:
+          ref: develop
 
-      - name: Fetch OAuth Token and Download iFlow via API
+      - name: Install jq & unzip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq unzip
+
+      - name: Authenticate & Download Integration Content
         env:
-          SERVICE_KEY: ${{ secrets.CPI_API_SERVICE_KEY }}
+          TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}
+          CLIENT_ID: ${{ secrets.DEV_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.DEV_CLIENT_SECRET }}
+          API_URL: ${{ secrets.DEV_HOST }}
         run: |
-          # 1. Parse your existing Service Key values using jq
-          CLIENT_ID=$(echo '$SERVICE_KEY' | jq -r '.uaa.clientid')
-          CLIENT_SECRET=$(echo '$SERVICE_KEY' | jq -r '.uaa.clientsecret')
-          TOKEN_URL=$(echo '$SERVICE_KEY' | jq -r '.uaa.tokenurl')
-          API_URL=$(echo '$SERVICE_KEY' | jq -r '.url')
+          echo "Fetching OAuth Token..."
+          ACCESS_TOKEN=$(curl -s --location \
+            --request POST "$TOKEN_URL" \
+            --header "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "grant_type=client_credentials" \
+            --data-urlencode "client_id=$CLIENT_ID" \
+            --data-urlencode "client_secret=$CLIENT_SECRET" | jq -r '.access_token')
 
-          # 2. Request an access token from the SAP OAuth Server
-          echo "Fetching OAuth token..."
-          TOKEN_RESPONSE=$(curl -s -X POST "$TOKEN_URL?grant_type=client_credentials" \
-            -u "$CLIENT_ID:$CLIENT_SECRET")
-          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+          echo "Token received."
 
-          if [ "$ACCESS_TOKEN" = "null" ] || [ -z "$ACCESS_TOKEN" ]; then
-            echo "Failed to retrieve access token. Response: $TOKEN_RESPONSE"
-            exit 1
-          fi
+          mkdir -p package/Test_Package/iflows
 
-          # 3. Create the destination directory
-          mkdir -p src
+          echo "Fetching list of iFlows..."
+          curl -s --location "$API_URL/IntegrationDesigntimeArtifacts" \
+            --header "Authorization: Bearer $ACCESS_TOKEN" \
+            --header "Accept: application/json" > artifacts.json
 
-          # 4. Call SAP OData API to fetch the iFlow bundle value and save as a ZIP archive
-          echo "Downloading iFlow archive..."
-          curl -s -L -X GET "$API_URL/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Integration_flow',Version='1.0.0')/\$value" \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            --output src/Test_Integration_flow.zip
+          for ARTIFACT in $(jq -r '.d.results[].Id' artifacts.json); do
+            echo "Downloading artifact: $ARTIFACT"
 
-          # 5. Extract the iFlow contents so changes are readable in Git text format
-          echo "Unpacking iFlow files..."
-          unzip -o src/Test_Integration_flow.zip -d src/Test_Integration_flow/
-          rm src/Test_Integration_flow.zip
+            curl -s --location "$API_URL/IntegrationDesigntimeArtifacts('$ARTIFACT')/\$value" \
+              --header "Authorization: Bearer $ACCESS_TOKEN" \
+              --output "package/mypackage/iflows/$ARTIFACT.zip"
 
-      - name: Commit and Push Changes
+            unzip -o "package/mypackage/iflows/$ARTIFACT.zip" -d "package/mypackage/iflows/$ARTIFACT"
+          done
+
+      - name: Commit & Push Changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          if [ -n "$(git status --porcelain)" ]; then
-            git add .
-            git commit -m "Automated Sync: Updated Test_Integration_flow from CPI Tenant"
-            git push
-          else
-            echo "No changes found between CPI tenant and repository."
-          fi
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+          git add .
+          git commit -m "Auto-sync from SAP BTP Cloud Integration" || echo "No changes to commit"
+          git push origin developer
