@@ -1,75 +1,159 @@
-name: Extract iFlows from Tenant to GitHub
+name: Sync Integration Suite package and iFlow to Git
 
 on:
-  workflow_dispatch:      # Allows you to click the button to run manually
+  workflow_dispatch:  # allow manual run
+  schedule:
+    # Optional: run daily at 02:00 UTC
+    - cron: "0 2 * * *"
 
-# -----------------------------------------------------------------------------
-# Required secrets (already configured in your repo):
-#   DEV_CLIENT_ID
-#   DEV_CLIENT_SECRET
-#   DEV_TOKEN_URL   (e.g. https://<subaccount>.authentication.<region>.hana.ondemand.com/oauth/token)
-#   DEV_HOST        (e.g. https://<tenant>.cfapps.<region>.hana.ondemand.com)
-# -----------------------------------------------------------------------------
+env:
+  # Package and iFlow names to sync
+  PACKAGE_NAME: "Test_Package"
+  IFLOW_NAME: "Test_Iflow"
+
+  # Git commit identity
+  GIT_AUTHOR_NAME: "Integration Suite Sync Bot"
+  GIT_AUTHOR_EMAIL: "no-reply@example.com"
+
+  # Target branch
+  TARGET_BRANCH: "main"
+
+  # Directory where content will be stored
+  SYNC_DIR: "integration-suite-content"
 
 jobs:
-  sync-tenant-to-git:
+  sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository code
+      - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.TARGET_BRANCH }}
 
-      - name: Fetch OAuth Token and Download iFlow via API
+      - name: Debug credentials (safe)
         run: |
-          # 1. Use secrets directly (no service key JSON parsing needed)
-          CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
-          CLIENT_SECRET="${{ secrets.DEV_CLIENT_SECRET }}"
-          TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
-          API_URL="${{ secrets.DEV_HOST }}"
+          echo "TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}"
+          echo "HOST: ${{ secrets.DEV_HOST }}"
+          echo "CLIENT_ID length: ${#{{ secrets.DEV_CLIENT_ID }}}"
+          echo "CLIENT_SECRET length: ${#{{ secrets.DEV_CLIENT_SECRET }}}"
 
-          # Optional debug (uncomment if you want to verify URLs, not secrets):
-          # echo "TOKEN_URL: $TOKEN_URL"
-          # echo "API_URL: $API_URL"
-          # echo "CLIENT_ID length: ${#CLIENT_ID}"
-          - name: Debug credentials (safe)
-            run: |
-              echo "TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}"
-              echo "HOST: ${{ secrets.DEV_HOST }}"
-              echo "CLIENT_ID length: ${#{{ secrets.DEV_CLIENT_ID }}}"
-              echo "CLIENT_SECRET length: ${#{{ secrets.DEV_CLIENT_SECRET }}}"
-          # 2. Request an access token from the SAP OAuth Server
-          echo "Fetching OAuth token..."
-          TOKEN_RESPONSE=$(curl -s -X POST "$TOKEN_URL?grant_type=client_credentials" \
-            -u "$CLIENT_ID:$CLIENT_SECRET")
-          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+      - name: Get OAuth token from XSUAA
+        id: token
+        run: |
+          RESPONSE=$(curl -s -X POST "${{ secrets.DEV_TOKEN_URL }}?grant_type=client_credentials" \
+            -u "${{ secrets.DEV_CLIENT_ID }}:${{ secrets.DEV_CLIENT_SECRET }}" \
+            -H "Accept: application/json")
 
-          if [ "$ACCESS_TOKEN" = "null" ] || [ -z "$ACCESS_TOKEN" ]; then
-            echo "Failed to retrieve access token. Response: $TOKEN_RESPONSE"
+          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
+            echo "Failed to get access token. Response:" >&2
+            echo "$RESPONSE" | jq . >&2
             exit 1
           fi
 
-          # 3. Create the destination directory
-          mkdir -p src
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
-          # 4. Call SAP OData API to fetch the iFlow bundle value and save as a ZIP archive
-          echo "Downloading iFlow archive..."
-          curl -s -L -X GET "$API_URL/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Integration_flow',Version='1.0.0')/\$value" \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            --output src/Test_Integration_flow.zip
-
-          # 5. Extract the iFlow contents so changes are readable in Git text format
-          echo "Unpacking iFlow files..."
-          unzip -o src/Test_Integration_flow.zip -d src/Test_Integration_flow/
-          rm src/Test_Integration_flow.zip
-
-      - name: Commit and Push Changes
+      - name: Find package by name and get iFlow artifact
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          if [ -n "$(git status --porcelain)" ]; then
-            git add .
-            git commit -m "Automated Sync: Updated Test_Integration_flow from CPI Tenant"
-            git push
+          IS_URL="${{ secrets.DEV_HOST }}"
+          ACCESS_TOKEN="${{ steps.token.outputs.ACCESS_TOKEN }}"
+          PACKAGE_NAME="${{ env.PACKAGE_NAME }}"
+          IFLOW_NAME="${{ env.IFLOW_NAME }}"
+          SYNC_DIR="${{ env.SYNC_DIR }}"
+
+          AUTH_HEADER="Authorization: Bearer $ACCESS_TOKEN"
+          ACCEPT_HEADER="Accept: application/json"
+
+          mkdir -p "$SYNC_DIR"
+
+          # 1) List packages and find the one with name == PACKAGE_NAME
+          LIST_PKGS_URL="$IS_URL/api/v1/IntegrationPackages"
+          LIST_PKGS_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "$LIST_PKGS_URL")
+
+          if echo "$LIST_PKGS_RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+            echo "Error listing packages:" >&2
+            echo "$LIST_PKGS_RESPONSE" | jq . >&2
+            exit 1
+          fi
+
+          # Find package ID where name matches PACKAGE_NAME
+          PKG_ID=$(echo "$LIST_PKGS_RESPONSE" | jq -r --arg name "$PACKAGE_NAME" '
+            .d.results[]
+            | select(.name == $name)
+            | .id
+          ' | head -n 1)
+
+          if [ -z "$PKG_ID" ] || [ "$PKG_ID" = "null" ]; then
+            echo "Package with name '$PACKAGE_NAME' not found." >&2
+            exit 1
+          fi
+
+          echo "Found package ID: $PKG_ID"
+
+          # Save package metadata
+          PKG_URL="$IS_URL/api/v1/IntegrationPackages('$PKG_ID')"
+          PKG_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "$PKG_URL")
+          echo "$PKG_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
+
+          # 2) List iFlows (IntegrationDesigntimeArtifacts) in this package
+          IFLOWS_URL="$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts"
+          IFLOWS_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "$IFLOWS_URL")
+
+          if echo "$IFLOWS_RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+            echo "Error fetching iFlows for package $PKG_ID:" >&2
+            echo "$IFLOWS_RESPONSE" | jq . >&2
+            exit 1
+          fi
+
+          # Find artifact ID where name == IFLOW_NAME
+          ARTIFACT_ID=$(echo "$IFLOWS_RESPONSE" | jq -r --arg name "$IFLOW_NAME" '
+            .d.results[]
+            | select(.name == $name)
+            | .id
+          ' | head -n 1)
+
+          if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
+            echo "iFlow with name '$IFLOW_NAME' not found in package '$PACKAGE_NAME'." >&2
+            exit 1
+          fi
+
+          echo "Found iFlow artifact ID: $ARTIFACT_ID"
+
+          # Save iFlows list for reference
+          echo "$IFLOWS_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
+
+          # 3) Get the iFlow artifact content
+          IFLOW_DETAIL_URL="$IS_URL/api/v1/IntegrationDesigntimeArtifacts('$ARTIFACT_ID')"
+          IFLOW_DETAIL_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "$IFLOW_DETAIL_URL")
+
+          if echo "$IFLOW_DETAIL_RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+            echo "Error fetching iFlow details for artifact $ARTIFACT_ID:" >&2
+            echo "$IFLOW_DETAIL_RESPONSE" | jq . >&2
+            exit 1
+          fi
+
+          # Save full iFlow metadata + content (as JSON)
+          IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME"
+          mkdir -p "$IFLOW_DIR"
+
+          echo "$IFLOW_DETAIL_RESPONSE" | jq . > "$IFLOW_DIR/${IFLOW_NAME}.json"
+
+          # Optional: if your tenant exposes raw XML via $value, you can also fetch it:
+          # IFLOW_VALUE_URL="$IS_URL/api/v1/IntegrationDesigntimeArtifacts('$ARTIFACT_ID')/\$value"
+          # curl -s -H "$AUTH_HEADER" "$IFLOW_VALUE_URL" > "$IFLOW_DIR/${IFLOW_NAME}.xml"
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ env.GIT_AUTHOR_NAME }}"
+          git config user.email "${{ env.GIT_AUTHOR_EMAIL }}"
+
+      - name: Commit and push changes
+        run: |
+          git add -A
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: sync package '${{ env.PACKAGE_NAME }}' iFlow '${{ env.IFLOW_NAME }}' from Integration Suite"
+            git push origin "${{ env.TARGET_BRANCH }}"
           else
-            echo "No changes found between CPI tenant and repository."
+            echo "No changes to commit."
           fi
