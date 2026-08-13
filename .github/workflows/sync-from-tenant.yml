@@ -35,8 +35,13 @@ jobs:
         run: |
           echo "TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}"
           echo "HOST: ${{ secrets.DEV_HOST }}"
-          echo "CLIENT_ID length: ${#{{ secrets.DEV_CLIENT_ID }}}"
-          echo "CLIENT_SECRET length: ${#{{ secrets.DEV_CLIENT_SECRET }}}"
+
+          # Safely check lengths by assigning to variables first
+          CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
+          CLIENT_SECRET="${{ secrets.DEV_CLIENT_SECRET }}"
+
+          echo "CLIENT_ID length: ${#CLIENT_ID}"
+          echo "CLIENT_SECRET length: ${#CLIENT_SECRET}"
 
       - name: Get OAuth token from XSUAA
         id: token
