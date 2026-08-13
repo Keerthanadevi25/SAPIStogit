@@ -30,7 +30,12 @@ jobs:
           # echo "TOKEN_URL: $TOKEN_URL"
           # echo "API_URL: $API_URL"
           # echo "CLIENT_ID length: ${#CLIENT_ID}"
-
+          - name: Debug credentials (safe)
+            run: |
+              echo "TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}"
+              echo "HOST: ${{ secrets.DEV_HOST }}"
+              echo "CLIENT_ID length: ${#{{ secrets.DEV_CLIENT_ID }}}"
+              echo "CLIENT_SECRET length: ${#{{ secrets.DEV_CLIENT_SECRET }}}"
           # 2. Request an access token from the SAP OAuth Server
           echo "Fetching OAuth token..."
           TOKEN_RESPONSE=$(curl -s -X POST "$TOKEN_URL?grant_type=client_credentials" \
