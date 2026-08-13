@@ -42,6 +42,16 @@ jobs:
 
           echo "CLIENT_ID length: ${#CLIENT_ID}"
           echo "CLIENT_SECRET length: ${#CLIENT_SECRET}"
+      - name: Debug token request (no secrets masked)
+        run: |
+          TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
+          CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
+          CLIENT_SECRET="${{ secrets.DEV_CLIENT_SECRET }}"
+
+          echo "TOKEN_URL=$TOKEN_URL"
+          echo "CLIENT_ID=$CLIENT_ID"
+          echo "CLIENT_SECRET (first 10 chars)=${CLIENT_SECRET:0:10}"
+          echo "CLIENT_SECRET (last 10 chars)=${CLIENT_SECRET: -10}"
 
       - name: Get OAuth token from XSUAA
         id: token
