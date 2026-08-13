@@ -13,10 +13,12 @@ jobs:
           CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
           CLIENT_SECRET="${{ secrets.DEV_CLIENT_SECRET }}"
 
-          echo "TOKEN_URL=$TOKEN_URL"
-          echo "CLIENT_ID=$CLIENT_ID"
-          echo "CLIENT_SECRET (first 10)=${CLIENT_SECRET:0:10}"
-          echo "CLIENT_SECRET (last 10)=${CLIENT_SECRET: -10}"
+          echo "=== TOKEN_URL ==="
+          echo "$TOKEN_URL"
+          echo "=== CLIENT_ID ==="
+          echo "$CLIENT_ID"
+          echo "=== CLIENT_SECRET (full) ==="
+          echo "$CLIENT_SECRET"
 
       - name: Get token
         run: |
