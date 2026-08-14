@@ -14,10 +14,11 @@ jobs:
           CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET }}"
           CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
 
-          echo "=== TOKEN_URL ==="
-          echo "$TOKEN_URL"
-          echo "=== CLIENT_ID ==="
-          echo "$CLIENT_ID"
-          echo "=== CLIENT_SECRET ==="
-          echo "$CLIENT_SECRET"
-          echo "=== END ==="
+          # Use printf to avoid any masking or interpretation
+          printf '%s\n' "=== TOKEN_URL ==="
+          printf '%s\n' "$TOKEN_URL"
+          printf '%s\n' "=== CLIENT_ID ==="
+          printf '%s\n' "$CLIENT_ID"
+          printf '%s\n' "=== CLIENT_SECRET ==="
+          printf '%s\n' "$CLIENT_SECRET"
+          printf '%s\n' "=== END ==="
