@@ -1,4 +1,4 @@
-name: Test XSUAA Token Debug
+name: Test XSUAA Token (Base64 Secret)
 
 on:
   workflow_dispatch:
@@ -7,24 +7,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Debug full values
-        run: |
-          TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
-          CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
-          CLIENT_SECRET="${{ secrets.DEV_CLIENT_SECRET }}"
-
-          echo "=== TOKEN_URL ==="
-          echo "$TOKEN_URL"
-          echo "=== CLIENT_ID ==="
-          echo "$CLIENT_ID"
-          echo "=== CLIENT_SECRET (full) ==="
-          echo "$CLIENT_SECRET"
-
       - name: Get token
         run: |
           TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
           CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
-          CLIENT_SECRET="${{ secrets.DEV_CLIENT_SECRET }}"
+          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET_B64 }}"
+
+          # Decode secret
+          CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
 
           RESPONSE=$(curl -s -X POST "$TOKEN_URL?grant_type=client_credentials" \
             -u "$CLIENT_ID:$CLIENT_SECRET" \
