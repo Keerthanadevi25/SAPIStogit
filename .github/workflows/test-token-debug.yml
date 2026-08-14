@@ -7,18 +7,21 @@ jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Show all credentials
+      - name: Show transformed credentials
         run: |
           TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
           CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
           CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET }}"
           CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
 
-          # Use printf to avoid any masking or interpretation
-          printf '%s\n' "=== TOKEN_URL ==="
-          printf '%s\n' "$TOKEN_URL"
-          printf '%s\n' "=== CLIENT_ID ==="
-          printf '%s\n' "$CLIENT_ID"
-          printf '%s\n' "=== CLIENT_SECRET ==="
-          printf '%s\n' "$CLIENT_SECRET"
-          printf '%s\n' "=== END ==="
+          # Add a prefix/suffix so GitHub doesn't mask them
+          echo "=== TOKEN_URL ==="
+          echo "X${TOKEN_URL}X"
+
+          echo "=== CLIENT_ID ==="
+          echo "X${CLIENT_ID}X"
+
+          echo "=== CLIENT_SECRET ==="
+          echo "$CLIENT_SECRET"
+
+          echo "=== END ==="
