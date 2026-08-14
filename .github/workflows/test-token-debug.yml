@@ -11,7 +11,7 @@ jobs:
         run: |
           TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
           CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
-          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET_B64 }}"
+          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET }}"
           CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
 
           echo "=== TOKEN_URL ==="
