@@ -1,24 +1,26 @@
-name: Debug All Credentials (Hashed)
+name: Test Token Final
 
 on:
   workflow_dispatch:
 
 jobs:
-  debug:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Show hashed credentials
+      - name: Get token with debug
         run: |
           TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
           CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
-          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET }}"
+          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET_B64 }}"
+
           CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
 
-          # Compute SHA256 hashes
-          TOKEN_URL_HASH=$(echo -n "$TOKEN_URL" | sha256sum | awk '{print $1}')
-          CLIENT_ID_HASH=$(echo -n "$CLIENT_ID" | sha256sum | awk '{print $1}')
-          CLIENT_SECRET_HASH=$(echo -n "$CLIENT_SECRET" | sha256sum | awk '{print $1}')
+          echo "Calling: $TOKEN_URL?grant_type=client_credentials"
+          echo "Client ID: $CLIENT_ID"
 
-          echo "TOKEN_URL_HASH=$TOKEN_URL_HASH"
-          echo "CLIENT_ID_HASH=$CLIENT_ID_HASH"
-          echo "CLIENT_SECRET_HASH=$CLIENT_SECRET_HASH"
+          RESPONSE=$(curl -v -X POST "$TOKEN_URL?grant_type=client_credentials" \
+            -u "$CLIENT_ID:$CLIENT_SECRET" \
+            -H "Accept: application/json" 2>&1)
+
+          echo "Full curl output:"
+          echo "$RESPONSE"
