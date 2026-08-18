@@ -101,7 +101,8 @@ jobs:
           IFLOWS_RESPONSE="$(api_get \
             "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")"
 
-          printf '%s' "$IFLOWS_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
+          printf '%s' "$IFLOWS_RESPONSE" | jq . \
+            > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
 
           ARTIFACT_ID="$(printf '%s' "$IFLOWS_RESPONSE" | jq -r \
             --arg name "$IFLOW_NAME" '
@@ -122,27 +123,17 @@ jobs:
           IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME"
           mkdir -p "$IFLOW_DIR"
 
-          # The artifact entity requires the named OData key: Id='...'
-          IFLOW_URL="$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts(Id='$ARTIFACT_ID')"
+          # Save the iFlow object already returned by the successful package listing.
+          printf '%s' "$IFLOWS_RESPONSE" | jq \
+            --arg id "$ARTIFACT_ID" '
+              .d.results[]
+              | select(.Id == $id)
+            ' > "$IFLOW_DIR/${IFLOW_NAME}.json"
 
-          echo "Downloading iFlow metadata..."
-
-          HTTP_CODE="$(curl --silent --show-error \
-            --output "$IFLOW_DIR/${IFLOW_NAME}-response.json" \
-            --write-out "%{http_code}" \
-            --header "Authorization: Bearer $ACCESS_TOKEN" \
-            --header "Accept: application/json" \
-            "$IFLOW_URL")"
-
-          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-            echo "Failed to download iFlow metadata. HTTP status: $HTTP_CODE" >&2
-            echo "SAP response:" >&2
-            cat "$IFLOW_DIR/${IFLOW_NAME}-response.json" >&2
+          if [ ! -s "$IFLOW_DIR/${IFLOW_NAME}.json" ]; then
+            echo "Failed to write iFlow metadata." >&2
             exit 1
           fi
-
-          jq . "$IFLOW_DIR/${IFLOW_NAME}-response.json" > "$IFLOW_DIR/${IFLOW_NAME}.json"
-          rm "$IFLOW_DIR/${IFLOW_NAME}-response.json"
 
       - name: Configure Git with PAT
         env:
