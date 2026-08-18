@@ -1,0 +1,41 @@
+name: Debug List Packages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get token
+        id: token
+        run: |
+          TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
+          CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
+          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET_B64 }}"
+
+          CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
+
+          RESPONSE=$(curl -s -X POST "$TOKEN_URL?grant_type=client_credentials" \
+            -u "$CLIENT_ID:$CLIENT_SECRET" \
+            -H "Accept: application/json")
+
+          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: List packages
+        run: |
+          IS_URL="${{ secrets.DEV_HOST }}"
+          ACCESS_TOKEN="${{ steps.token.outputs.ACCESS_TOKEN }}"
+
+          AUTH_HEADER="Authorization: Bearer $ACCESS_TOKEN"
+          ACCEPT_HEADER="Accept: application/json"
+
+          RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
+            "$IS_URL/api/v1/IntegrationPackages")
+
+          echo "Raw response:"
+          echo "$RESPONSE" | jq .
+
+          echo "Package names:"
+          echo "$RESPONSE" | jq -r '.d.results[].name'
