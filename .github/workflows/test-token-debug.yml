@@ -1,16 +1,23 @@
-name: Debug Secret Lengths (Plain)
+name: Test Token (Plain Secret)
 
 on:
   workflow_dispatch:
 
 jobs:
-  debug:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Show lengths
+      - name: Get token
         run: |
+          TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
+          CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
           CLIENT_SECRET="${{ secrets.DEV_CLIENT_SECRET }}"
 
-          echo "Decoded length: ${#CLIENT_SECRET}"
-          echo "Decoded (hex):"
-          echo -n "$CLIENT_SECRET" | xxd
+          echo "Calling: $TOKEN_URL?grant_type=client_credentials"
+
+          RESPONSE=$(curl -s -X POST "$TOKEN_URL?grant_type=client_credentials" \
+            -u "$CLIENT_ID:$CLIENT_SECRET" \
+            -H "Accept: application/json")
+
+          echo "Response:"
+          echo "$RESPONSE" | jq .
