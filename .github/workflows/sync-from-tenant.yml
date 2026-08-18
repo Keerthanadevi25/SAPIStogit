@@ -117,11 +117,29 @@ jobs:
 
           echo "Found iFlow artifact ID: $ARTIFACT_ID"
 
-          IFLOW_DETAIL_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationDesigntimeArtifacts('$ARTIFACT_ID')")"
-
           IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME"
           mkdir -p "$IFLOW_DIR"
-          printf '%s' "$IFLOW_DETAIL_RESPONSE" | jq . > "$IFLOW_DIR/${IFLOW_NAME}.json"
+
+          IFLOW_URL="$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts('$ARTIFACT_ID')"
+
+          echo "Downloading iFlow metadata..."
+
+          HTTP_CODE="$(curl --silent --show-error \
+            --output "$IFLOW_DIR/${IFLOW_NAME}-response.json" \
+            --write-out "%{http_code}" \
+            --header "Authorization: Bearer $ACCESS_TOKEN" \
+            --header "Accept: application/json" \
+            "$IFLOW_URL")"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Failed to download iFlow metadata. HTTP status: $HTTP_CODE" >&2
+            echo "SAP response:" >&2
+            cat "$IFLOW_DIR/${IFLOW_NAME}-response.json" >&2
+            exit 1
+          fi
+
+          jq . "$IFLOW_DIR/${IFLOW_NAME}-response.json" > "$IFLOW_DIR/${IFLOW_NAME}.json"
+          rm "$IFLOW_DIR/${IFLOW_NAME}-response.json"
 
       - name: Configure Git with PAT
         env:
