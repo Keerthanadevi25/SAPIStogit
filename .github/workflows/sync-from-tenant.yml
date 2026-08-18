@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "0 2 * * *"
 
+permissions:
+  contents: read
+
 env:
   PACKAGE_NAME: "Test_Package"
   IFLOW_NAME: "Test_Iflow"
@@ -18,110 +21,135 @@ env:
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
+      - name: Checkout target branch
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Get OAuth token
         id: token
+        env:
+          TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}
+          CLIENT_ID: ${{ secrets.DEV_CLIENT_ID }}
+          CLIENT_SECRET_B64: ${{ secrets.DEV_CLIENT_SECRET_B64 }}
         run: |
-          TOKEN_URL="${{ secrets.DEV_TOKEN_URL }}"
-          CLIENT_ID="${{ secrets.DEV_CLIENT_ID }}"
-          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET_B64 }}"
+          set -euo pipefail
 
-          CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
+          CLIENT_SECRET="$(printf '%s' "$CLIENT_SECRET_B64" | base64 --decode)"
 
-          RESPONSE=$(curl -s -X POST "$TOKEN_URL?grant_type=client_credentials" \
-            -u "$CLIENT_ID:$CLIENT_SECRET" \
-            -H "Accept: application/json")
+          RESPONSE="$(curl --fail-with-body --silent --show-error \
+            --request POST \
+            "${TOKEN_URL}?grant_type=client_credentials" \
+            --user "${CLIENT_ID}:${CLIENT_SECRET}" \
+            --header "Accept: application/json")"
 
-          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
-          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
-            echo "Failed to get access token. Response:" >&2
-            echo "$RESPONSE" | jq . >&2
+          ACCESS_TOKEN="$(printf '%s' "$RESPONSE" | jq -r '.access_token // empty')"
+
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain an OAuth access token." >&2
+            printf '%s' "$RESPONSE" | jq . >&2 || printf '%s\n' "$RESPONSE" >&2
             exit 1
           fi
 
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Find package and iFlow, download content
+      - name: Download package and iFlow metadata
+        env:
+          IS_URL: ${{ secrets.DEV_HOST }}
+          ACCESS_TOKEN: ${{ steps.token.outputs.ACCESS_TOKEN }}
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
+          IFLOW_NAME: ${{ env.IFLOW_NAME }}
+          SYNC_DIR: ${{ env.SYNC_DIR }}
         run: |
-          IS_URL="${{ secrets.DEV_HOST }}"
-          ACCESS_TOKEN="${{ steps.token.outputs.ACCESS_TOKEN }}"
-          PACKAGE_NAME="${{ env.PACKAGE_NAME }}"
-          IFLOW_NAME="${{ env.IFLOW_NAME }}"
-          SYNC_DIR="${{ env.SYNC_DIR }}"
+          set -euo pipefail
 
-          AUTH_HEADER="Authorization: Bearer $ACCESS_TOKEN"
-          ACCEPT_HEADER="Accept: application/json"
-
+          IS_URL="${IS_URL%/}"
           mkdir -p "$SYNC_DIR"
 
-          LIST_PKGS_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
-            "$IS_URL/api/v1/IntegrationPackages")
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer $ACCESS_TOKEN" \
+              --header "Accept: application/json" \
+              "$1"
+          }
 
-          PKG_ID=$(echo "$LIST_PKGS_RESPONSE" | jq -r --arg name "$PACKAGE_NAME" '
-            .d.results[]
-            | select(.Name == $name)
-            | .Id
-          ' | head -n 1)
+          LIST_PKGS_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages")"
+
+          PKG_ID="$(printf '%s' "$LIST_PKGS_RESPONSE" | jq -r \
+            --arg name "$PACKAGE_NAME" '
+              .d.results[]
+              | select(.Name == $name)
+              | .Id
+            ' | head -n 1)"
 
           if [ -z "$PKG_ID" ] || [ "$PKG_ID" = "null" ]; then
-            echo "Package '$PACKAGE_NAME' not found." >&2
-            echo "Available package names:" >&2
-            echo "$LIST_PKGS_RESPONSE" | jq -r '.d.results[].Name' >&2
+            echo "Package '$PACKAGE_NAME' was not found." >&2
+            echo "Available packages:" >&2
+            printf '%s' "$LIST_PKGS_RESPONSE" | jq -r '.d.results[].Name' >&2
             exit 1
           fi
 
           echo "Found package ID: $PKG_ID"
 
-          PKG_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
-            "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')")
-          echo "$PKG_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
+          PKG_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')")"
+          printf '%s' "$PKG_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
 
-          IFLOWS_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
-            "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")
+          IFLOWS_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")"
+          printf '%s' "$IFLOWS_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
 
-          ARTIFACT_ID=$(echo "$IFLOWS_RESPONSE" | jq -r --arg name "$IFLOW_NAME" '
-            .d.results[]
-            | select(.Name == $name)
-            | .Id
-          ' | head -n 1)
+          ARTIFACT_ID="$(printf '%s' "$IFLOWS_RESPONSE" | jq -r \
+            --arg name "$IFLOW_NAME" '
+              .d.results[]
+              | select(.Name == $name)
+              | .Id
+            ' | head -n 1)"
 
           if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
-            echo "iFlow '$IFLOW_NAME' not found in package '$PACKAGE_NAME'." >&2
-            echo "Available iFlow names in this package:" >&2
-            echo "$IFLOWS_RESPONSE" | jq -r '.d.results[].Name' >&2
+            echo "iFlow '$IFLOW_NAME' was not found in package '$PACKAGE_NAME'." >&2
+            echo "Available iFlows:" >&2
+            printf '%s' "$IFLOWS_RESPONSE" | jq -r '.d.results[].Name' >&2
             exit 1
           fi
 
           echo "Found iFlow artifact ID: $ARTIFACT_ID"
 
-          echo "$IFLOWS_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
-
-          IFLOW_DETAIL_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
-            "$IS_URL/api/v1/IntegrationDesigntimeArtifacts('$ARTIFACT_ID')")
+          IFLOW_DETAIL_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationDesigntimeArtifacts('$ARTIFACT_ID')")"
 
           IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME"
           mkdir -p "$IFLOW_DIR"
+          printf '%s' "$IFLOW_DETAIL_RESPONSE" | jq . > "$IFLOW_DIR/${IFLOW_NAME}.json"
 
-          echo "$IFLOW_DETAIL_RESPONSE" | jq . > "$IFLOW_DIR/${IFLOW_NAME}.json"
-
-      - name: Configure Git
+      - name: Configure Git with PAT
+        env:
+          GIT_PAT: ${{ secrets.GIT_PAT }}
         run: |
+          set -euo pipefail
+
+          if [ -z "$GIT_PAT" ]; then
+            echo "ERROR: Repository secret GIT_PAT is empty or unavailable." >&2
+            exit 1
+          fi
+
           git config user.name "${{ env.GIT_AUTHOR_NAME }}"
           git config user.email "${{ env.GIT_AUTHOR_EMAIL }}"
-          git remote set-url origin "https://x-access-token:${{ secrets.GIT_PAT }}@github.com/${{ github.repository }}.git"
+
+          git remote set-url origin \
+            "https://x-access-token:${GIT_PAT}@github.com/${{ github.repository }}.git"
 
       - name: Commit and push changes
         run: |
+          set -euo pipefail
+
           git add -A
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: sync package '${{ env.PACKAGE_NAME }}' iFlow '${{ env.IFLOW_NAME }}' from Integration Suite"
-            git push origin "${{ env.TARGET_BRANCH }}"
-          else
+
+          if git diff --staged --quiet; then
             echo "No changes to commit."
+            exit 0
           fi
+
+          git commit -m "chore: sync package '${{ env.PACKAGE_NAME }}' iFlow '${{ env.IFLOW_NAME }}' from Integration Suite"
+          git push origin "HEAD:${{ env.TARGET_BRANCH }}"
