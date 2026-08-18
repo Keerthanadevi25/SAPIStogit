@@ -1,4 +1,4 @@
-name: Debug Secret Lengths
+name: Debug Secret Lengths (Plain)
 
 on:
   workflow_dispatch:
@@ -9,10 +9,8 @@ jobs:
     steps:
       - name: Show lengths
         run: |
-          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET }}"
-          CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
+          CLIENT_SECRET="${{ secrets.DEV_CLIENT_SECRET }}"
 
-          echo "B64 length: ${#CLIENT_SECRET_B64}"
           echo "Decoded length: ${#CLIENT_SECRET}"
           echo "Decoded (hex):"
           echo -n "$CLIENT_SECRET" | xxd
