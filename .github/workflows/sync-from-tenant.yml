@@ -98,7 +98,9 @@ jobs:
           PKG_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')")"
           printf '%s' "$PKG_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
 
-          IFLOWS_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")"
+          IFLOWS_RESPONSE="$(api_get \
+            "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")"
+
           printf '%s' "$IFLOWS_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
 
           ARTIFACT_ID="$(printf '%s' "$IFLOWS_RESPONSE" | jq -r \
@@ -120,7 +122,8 @@ jobs:
           IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME"
           mkdir -p "$IFLOW_DIR"
 
-          IFLOW_URL="$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts('$ARTIFACT_ID')"
+          # The artifact entity requires the named OData key: Id='...'
+          IFLOW_URL="$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts(Id='$ARTIFACT_ID')"
 
           echo "Downloading iFlow metadata..."
 
