@@ -9,7 +9,7 @@ jobs:
     steps:
       - name: Show lengths
         run: |
-          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET_B64 }}"
+          CLIENT_SECRET_B64="${{ secrets.DEV_CLIENT_SECRET }}"
           CLIENT_SECRET=$(echo "$CLIENT_SECRET_B64" | base64 -d)
 
           echo "B64 length: ${#CLIENT_SECRET_B64}"
