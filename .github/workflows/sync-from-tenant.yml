@@ -60,18 +60,20 @@ jobs:
 
           mkdir -p "$SYNC_DIR"
 
-          # List packages and find by name
+          # List packages and find by Name (capital N)
           LIST_PKGS_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
             "$IS_URL/api/v1/IntegrationPackages")
 
           PKG_ID=$(echo "$LIST_PKGS_RESPONSE" | jq -r --arg name "$PACKAGE_NAME" '
             .d.results[]
-            | select(.name == $name)
-            | .id
+            | select(.Name == $name)
+            | .Id
           ' | head -n 1)
 
           if [ -z "$PKG_ID" ] || [ "$PKG_ID" = "null" ]; then
             echo "Package '$PACKAGE_NAME' not found." >&2
+            echo "Available package names:" >&2
+            echo "$LIST_PKGS_RESPONSE" | jq -r '.d.results[].Name' >&2
             exit 1
           fi
 
@@ -88,12 +90,14 @@ jobs:
 
           ARTIFACT_ID=$(echo "$IFLOWS_RESPONSE" | jq -r --arg name "$IFLOW_NAME" '
             .d.results[]
-            | select(.name == $name)
-            | .id
+            | select(.Name == $name)
+            | .Id
           ' | head -n 1)
 
           if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
             echo "iFlow '$IFLOW_NAME' not found in package '$PACKAGE_NAME'." >&2
+            echo "Available iFlow names in this package:" >&2
+            echo "$IFLOWS_RESPONSE" | jq -r '.d.results[].Name' >&2
             exit 1
           fi
 
