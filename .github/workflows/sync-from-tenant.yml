@@ -60,7 +60,6 @@ jobs:
 
           mkdir -p "$SYNC_DIR"
 
-          # List packages and find by Name (capital N)
           LIST_PKGS_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
             "$IS_URL/api/v1/IntegrationPackages")
 
@@ -79,12 +78,10 @@ jobs:
 
           echo "Found package ID: $PKG_ID"
 
-          # Save package metadata
           PKG_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
             "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')")
           echo "$PKG_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
 
-          # List iFlows in the package
           IFLOWS_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
             "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")
 
@@ -105,7 +102,6 @@ jobs:
 
           echo "$IFLOWS_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
 
-          # Get iFlow artifact content
           IFLOW_DETAIL_RESPONSE=$(curl -s -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
             "$IS_URL/api/v1/IntegrationDesigntimeArtifacts('$ARTIFACT_ID')")
 
