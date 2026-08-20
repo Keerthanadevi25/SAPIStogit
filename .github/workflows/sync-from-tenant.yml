@@ -172,6 +172,12 @@ jobs:
             -d extracted
 
           find extracted -type f | sort
+      - name: Generate content hashes
+        run: |
+          find extracted -type f | sort | while read f; do
+            sha256sum "$f"
+          done > extracted/file-hashes.txt
+          cat extracted/file-hashes.txt
 
       - name: Configure Git with PAT
         env:
