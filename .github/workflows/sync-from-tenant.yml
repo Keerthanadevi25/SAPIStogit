@@ -203,9 +203,7 @@ jobs:
 
           git remote set-url origin \
             "https://x-access-token:${GIT_PAT}@github.com/${{ github.repository }}.git"
-
-      - name: Commit and push changes
-        run: |
+      
           set -euo pipefail
       - name: Show changed files
         run: |
@@ -215,7 +213,8 @@ jobs:
         run: |
           git diff -- extracted/metainfo.prop
           git diff -- extracted/src/main/resources/parameters.prop
-          
+      - name: Commit and push changes
+        run: |
           git add -A
 
           if git diff --staged --quiet; then
