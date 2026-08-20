@@ -161,6 +161,17 @@ jobs:
       - name: Inspect ZIP contents
         run: |
           unzip -l integration-suite-content/Test_Package/Test_Iflow.zip
+          
+      - name: Extract iFlow ZIP
+        run: |
+          rm -rf extracted
+          mkdir extracted
+
+          unzip -o \
+            integration-suite-content/Test_Package/Test_Iflow.zip \
+            -d extracted
+
+          find extracted -type f | sort
 
       - name: Configure Git with PAT
         env:
