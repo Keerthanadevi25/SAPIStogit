@@ -204,24 +204,27 @@ jobs:
           git remote set-url origin \
             "https://x-access-token:${GIT_PAT}@github.com/${{ github.repository }}.git"
       
-          set -euo pipefail
+         
       - name: Show changed files
         run: |
           git status --short
-          CHANGES=$(git status --porcelain | grep -v '\.zip$' || true)
-
-          if [ -z "$CHANGES" ]; then
-            echo "Only ZIP changed. Skipping commit."
-            exit 0
-          fi
+          
       - name: Show metadata file changes
         run: |
           git diff -- extracted/metainfo.prop
           git diff -- extracted/src/main/resources/parameters.prop
       - name: Commit and push changes
         run: |
-          git add -A
+         set -euo pipefail
+          CHANGES=$(git status --porcelain | grep -v '\.zip$' || true)
 
+          if [ -z "$CHANGES" ]; then
+            echo "Only ZIP changed. Skipping commit."
+            exit 0
+          fi
+          
+          git add -A
+          
           if git diff --staged --quiet; then
             echo "No changes to commit."
             exit 0
