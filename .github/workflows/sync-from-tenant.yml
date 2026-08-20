@@ -202,11 +202,11 @@ jobs:
       - name: Commit and push changes
         run: |
          set -euo pipefail
-          SIGNIFICANT_CHANGES=$(git status --porcelain | grep '^.*extracted/' || true)
+         SIGNIFICANT_CHANGES=$(git status --porcelain extracted/ || true)
           if [ -z "$SIGNIFICANT_CHANGES" ]; then
-              echo "No iFlow source changes detected."
-              exit 0
-            fi
+            echo "No iFlow source changes detected."
+            exit 0
+          fi
           
           git add -A
           
