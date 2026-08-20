@@ -194,7 +194,10 @@ jobs:
       - name: Commit and push changes
         run: |
           set -euo pipefail
-
+      - name: Show changed files
+        run: |
+          git status --short
+          
           git add -A
 
           if git diff --staged --quiet; then
