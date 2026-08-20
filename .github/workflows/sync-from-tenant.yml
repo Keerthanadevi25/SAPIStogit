@@ -208,7 +208,12 @@ jobs:
       - name: Show changed files
         run: |
           git status --short
+          CHANGES=$(git status --porcelain | grep -v '\.zip$' || true)
 
+          if [ -z "$CHANGES" ]; then
+            echo "Only ZIP changed. Skipping commit."
+            exit 0
+          fi
       - name: Show metadata file changes
         run: |
           git diff -- extracted/metainfo.prop
