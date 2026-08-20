@@ -171,7 +171,20 @@ jobs:
             integration-suite-content/Test_Package/Test_Iflow.zip \
             -d extracted
 
-          find extracted -type f | sort
+          find extracted -type f | sort          
+
+      - name: Normalize exported files
+        run: |
+          if [ -f extracted/metainfo.prop ]; then
+            sed -i '/^#.*UTC/d' extracted/metainfo.prop
+          fi
+
+          if [ -f extracted/src/main/resources/parameters.prop ]; then
+            sed -i '/^#.*UTC/d' extracted/src/main/resources/parameters.prop
+          fi
+
+          echo "Normalized SAP-generated timestamps."
+          
       - name: Generate content hashes
         run: |
           find extracted -type f | sort | while read f; do
