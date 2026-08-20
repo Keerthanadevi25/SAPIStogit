@@ -216,12 +216,11 @@ jobs:
       - name: Commit and push changes
         run: |
          set -euo pipefail
-          CHANGES=$(git status --porcelain | grep -v '\.zip$' || true)
-
-          if [ -z "$CHANGES" ]; then
-            echo "Only ZIP changed. Skipping commit."
-            exit 0
-          fi
+          SIGNIFICANT_CHANGES=$(git status --porcelain | grep '^.*extracted/' || true)
+          if [ -z "$SIGNIFICANT_CHANGES" ]; then
+              echo "No iFlow source changes detected."
+              exit 0
+            fi
           
           git add -A
           
