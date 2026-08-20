@@ -158,6 +158,9 @@ jobs:
           echo "ZIP downloaded successfully."
 
           ls -lh "$IFLOW_DIR"
+      - name: Inspect ZIP contents
+        run: |
+          unzip -l integration-suite-content/Test_Package/Test_Iflow.zip
 
       - name: Configure Git with PAT
         env:
