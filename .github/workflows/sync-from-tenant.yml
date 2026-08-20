@@ -158,10 +158,7 @@ jobs:
           echo "ZIP downloaded successfully."
 
           ls -lh "$IFLOW_DIR"
-      - name: Inspect ZIP contents
-        run: |
-          unzip -l integration-suite-content/Test_Package/Test_Iflow.zip
-          
+              
       - name: Extract iFlow ZIP
         run: |
           rm -rf extracted
@@ -183,15 +180,8 @@ jobs:
             sed -i '/^#.*UTC/d' extracted/src/main/resources/parameters.prop
           fi
 
-          echo "Normalized SAP-generated timestamps."
-          
-      - name: Generate content hashes
-        run: |
-          find extracted -type f | sort | while read f; do
-            sha256sum "$f"
-          done > extracted/file-hashes.txt
-          cat extracted/file-hashes.txt
-
+          echo "Normalized SAP-generated timestamps."      
+      
       - name: Configure Git with PAT
         env:
           GIT_PAT: ${{ secrets.GIT_PAT }}
@@ -207,12 +197,8 @@ jobs:
          
       - name: Show changed files
         run: |
-          git status --short
-          
-      - name: Show metadata file changes
-        run: |
-          git diff -- extracted/metainfo.prop
-          git diff -- extracted/src/main/resources/parameters.prop
+          git status --short          
+      
       - name: Commit and push changes
         run: |
          set -euo pipefail
