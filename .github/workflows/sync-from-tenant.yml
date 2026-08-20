@@ -50,14 +50,13 @@ jobs:
           ACCESS_TOKEN="$(printf '%s' "$RESPONSE" | jq -r '.access_token // empty')"
 
           if [ -z "$ACCESS_TOKEN" ]; then
-            echo "Failed to obtain an OAuth access token." >&2
-            printf '%s' "$RESPONSE" | jq . >&2 || printf '%s\n' "$RESPONSE" >&2
+            echo "Failed to obtain OAuth token."
             exit 1
           fi
 
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Download package and iFlow metadata
+      - name: Download package metadata and iFlow ZIP
         env:
           IS_URL: ${{ secrets.DEV_HOST }}
           ACCESS_TOKEN: ${{ steps.token.outputs.ACCESS_TOKEN }}
@@ -68,6 +67,7 @@ jobs:
           set -euo pipefail
 
           IS_URL="${IS_URL%/}"
+
           mkdir -p "$SYNC_DIR"
 
           api_get() {
@@ -77,26 +77,30 @@ jobs:
               "$1"
           }
 
+          echo "Finding package..."
+
           LIST_PKGS_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages")"
 
           PKG_ID="$(printf '%s' "$LIST_PKGS_RESPONSE" | jq -r \
             --arg name "$PACKAGE_NAME" '
               .d.results[]
-              | select(.Name == $name)
+              | select(.Name==$name)
               | .Id
-            ' | head -n 1)"
+            ' | head -n1)"
 
           if [ -z "$PKG_ID" ] || [ "$PKG_ID" = "null" ]; then
-            echo "Package '$PACKAGE_NAME' was not found." >&2
-            echo "Available packages:" >&2
-            printf '%s' "$LIST_PKGS_RESPONSE" | jq -r '.d.results[].Name' >&2
+            echo "Package not found: $PACKAGE_NAME"
             exit 1
           fi
 
-          echo "Found package ID: $PKG_ID"
+          echo "Package ID: $PKG_ID"
 
           PKG_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')")"
-          printf '%s' "$PKG_RESPONSE" | jq . > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
+
+          printf '%s' "$PKG_RESPONSE" | jq . \
+            > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
+
+          echo "Reading package artifacts..."
 
           IFLOWS_RESPONSE="$(api_get \
             "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")"
@@ -107,44 +111,59 @@ jobs:
           ARTIFACT_ID="$(printf '%s' "$IFLOWS_RESPONSE" | jq -r \
             --arg name "$IFLOW_NAME" '
               .d.results[]
-              | select(.Name == $name)
+              | select(.Name==$name)
               | .Id
-            ' | head -n 1)"
+            ' | head -n1)"
 
           if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
-            echo "iFlow '$IFLOW_NAME' was not found in package '$PACKAGE_NAME'." >&2
-            echo "Available iFlows:" >&2
-            printf '%s' "$IFLOWS_RESPONSE" | jq -r '.d.results[].Name' >&2
+            echo "iFlow not found: $IFLOW_NAME"
             exit 1
           fi
 
-          echo "Found iFlow artifact ID: $ARTIFACT_ID"
+          ARTIFACT_VERSION="$(printf '%s' "$IFLOWS_RESPONSE" | jq -r \
+            --arg id "$ARTIFACT_ID" '
+              .d.results[]
+              | select(.Id==$id)
+              | .Version
+            ' | head -n1)"
+
+          echo "Artifact ID: $ARTIFACT_ID"
+          echo "Version: $ARTIFACT_VERSION"
 
           IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME"
           mkdir -p "$IFLOW_DIR"
 
-          # Save the iFlow object already returned by the successful package listing.
           printf '%s' "$IFLOWS_RESPONSE" | jq \
             --arg id "$ARTIFACT_ID" '
               .d.results[]
-              | select(.Id == $id)
-            ' > "$IFLOW_DIR/${IFLOW_NAME}.json"
+              | select(.Id==$id)
+            ' \
+            > "$IFLOW_DIR/${IFLOW_NAME}.json"
 
-          if [ ! -s "$IFLOW_DIR/${IFLOW_NAME}.json" ]; then
-            echo "Failed to write iFlow metadata." >&2
+          echo "Downloading iFlow ZIP..."
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --header "Authorization: Bearer $ACCESS_TOKEN" \
+            --output "$IFLOW_DIR/${IFLOW_NAME}.zip" \
+            "$IS_URL/api/v1/IntegrationDesigntimeArtifacts(Id='$ARTIFACT_ID',Version='$ARTIFACT_VERSION')/\$value"
+
+          if [ ! -f "$IFLOW_DIR/${IFLOW_NAME}.zip" ]; then
+            echo "ZIP download failed."
             exit 1
           fi
+
+          echo "ZIP downloaded successfully."
+
+          ls -lh "$IFLOW_DIR"
 
       - name: Configure Git with PAT
         env:
           GIT_PAT: ${{ secrets.GIT_PAT }}
         run: |
           set -euo pipefail
-
-          if [ -z "$GIT_PAT" ]; then
-            echo "ERROR: Repository secret GIT_PAT is empty or unavailable." >&2
-            exit 1
-          fi
 
           git config user.name "${{ env.GIT_AUTHOR_NAME }}"
           git config user.email "${{ env.GIT_AUTHOR_EMAIL }}"
@@ -163,5 +182,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore: sync package '${{ env.PACKAGE_NAME }}' iFlow '${{ env.IFLOW_NAME }}' from Integration Suite"
-          git push origin "HEAD:${{ env.TARGET_BRANCH }}"
+          git commit -m "chore: sync ${PACKAGE_NAME}/${IFLOW_NAME} from Integration Suite"
+          git push origin HEAD:${{ env.TARGET_BRANCH }}
