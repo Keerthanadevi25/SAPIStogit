@@ -197,6 +197,11 @@ jobs:
       - name: Show changed files
         run: |
           git status --short
+
+      - name: Show metadata file changes
+        run: |
+          git diff -- extracted/metainfo.prop
+          git diff -- extracted/src/main/resources/parameters.prop
           
           git add -A
 
