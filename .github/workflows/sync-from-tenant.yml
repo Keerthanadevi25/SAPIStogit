@@ -161,26 +161,31 @@ jobs:
               
       - name: Extract iFlow ZIP
         run: |
-          rm -rf extracted
-          mkdir extracted
+          EXTRACT_DIR="extracted/${PACKAGE_NAME}/${IFLOW_NAME}"
+
+          rm -rf "$EXTRACT_DIR"
+          mkdir -p "$EXTRACT_DIR"
 
           unzip -o \
-            integration-suite-content/Test_Package/Test_Iflow.zip \
-            -d extracted
+            "integration-suite-content/${PACKAGE_NAME}/${IFLOW_NAME}.zip" \
+            -d "$EXTRACT_DIR"
 
-          find extracted -type f | sort          
+          find "$EXTRACT_DIR" -type f | sort     
 
       - name: Normalize exported files
         run: |
-          if [ -f extracted/metainfo.prop ]; then
-            sed -i '/^#.*UTC/d' extracted/metainfo.prop
+          EXTRACT_DIR="extracted/${PACKAGE_NAME}/${IFLOW_NAME}"
+
+          if [ -f "$EXTRACT_DIR/metainfo.prop" ]; then
+            sed -i '/^#.*UTC/d' "$EXTRACT_DIR/metainfo.prop"
           fi
 
-          if [ -f extracted/src/main/resources/parameters.prop ]; then
-            sed -i '/^#.*UTC/d' extracted/src/main/resources/parameters.prop
+          if [ -f "$EXTRACT_DIR/src/main/resources/parameters.prop" ]; then
+            sed -i '/^#.*UTC/d' \
+            "$EXTRACT_DIR/src/main/resources/parameters.prop"
           fi
 
-          echo "Normalized SAP-generated timestamps."      
+          echo "Normalized SAP-generated timestamps."    
       
       - name: Configure Git with PAT
         env:
@@ -203,7 +208,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          SIGNIFICANT_CHANGES=$(git status --porcelain extracted/ || true)
+          SIGNIFICANT_CHANGES=$(git status --porcelain \
+            "extracted/${PACKAGE_NAME}/${IFLOW_NAME}" || true)
 
           if [ -z "$SIGNIFICANT_CHANGES" ]; then
             echo "No iFlow source changes detected."
