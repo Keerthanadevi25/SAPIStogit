@@ -71,4 +71,155 @@ jobs:
 
           api_get() {
             curl --fail-with-body --silent --show-error \
-              --header "Authorization: 
+              --header "Authorization: Bearer $ACCESS_TOKEN" \
+              --header "Accept: application/json" \
+              "$1"
+          }
+
+          echo "Finding package..."
+
+          LIST_PKGS_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages")"
+
+          PKG_ID="$(printf '%s' "$LIST_PKGS_RESPONSE" | jq -r \
+            --arg name "$PACKAGE_NAME" '
+              .d.results[]
+              | select(.Name==$name)
+              | .Id
+            ' | head -n1)"
+
+          if [ -z "$PKG_ID" ] || [ "$PKG_ID" = "null" ]; then
+            echo "Package not found: $PACKAGE_NAME"
+            exit 1
+          fi
+
+          echo "Package ID: $PKG_ID"
+
+          PKG_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')")"
+
+          printf '%s' "$PKG_RESPONSE" | jq . \
+            > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
+
+          echo "Reading package artifacts..."
+
+          IFLOWS_RESPONSE="$(api_get \
+            "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")"
+
+          printf '%s' "$IFLOWS_RESPONSE" | jq . \
+            > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
+
+          printf '%s' "$IFLOWS_RESPONSE" | jq -c '.d.results[]' | \
+          while read -r IFLOW
+          do
+
+            IFLOW_NAME="$(echo "$IFLOW" | jq -r '.Name')"
+            ARTIFACT_ID="$(echo "$IFLOW" | jq -r '.Id')"
+            ARTIFACT_VERSION="$(echo "$IFLOW" | jq -r '.Version')"
+
+            echo "----------------------------------------"
+            echo "Processing: $IFLOW_NAME"
+            echo "Artifact ID: $ARTIFACT_ID"
+            echo "Version: $ARTIFACT_VERSION"
+
+            IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME/$IFLOW_NAME"
+
+            mkdir -p "$IFLOW_DIR"
+
+            echo "$IFLOW" | jq . \
+              > "$IFLOW_DIR/${IFLOW_NAME}.json"
+
+            curl \
+              --fail-with-body \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer $ACCESS_TOKEN" \
+              --output "$IFLOW_DIR/${IFLOW_NAME}.zip" \
+              "$IS_URL/api/v1/IntegrationDesigntimeArtifacts(Id='$ARTIFACT_ID',Version='$ARTIFACT_VERSION')/\$value"
+
+            if [ ! -f "$IFLOW_DIR/${IFLOW_NAME}.zip" ]; then
+              echo "ZIP download failed for $IFLOW_NAME"
+              exit 1
+            fi
+
+          done
+
+      - name: Extract all iFlows
+        env:
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
+        run: |
+          set -euo pipefail
+
+          find "integration-suite-content/${PACKAGE_NAME}" \
+            -name "*.zip" | while read ZIP
+          do
+            IFLOW_NAME=$(basename "$ZIP" .zip)
+
+            EXTRACT_DIR="extracted/${PACKAGE_NAME}/${IFLOW_NAME}"
+
+            rm -rf "$EXTRACT_DIR"
+            mkdir -p "$EXTRACT_DIR"
+
+            unzip -o "$ZIP" -d "$EXTRACT_DIR" > /dev/null
+
+            echo "Extracted: $IFLOW_NAME"
+          done
+
+      - name: Normalize exported files
+        env:
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
+        run: |
+          set -euo pipefail
+
+          find "extracted/${PACKAGE_NAME}" \
+            -name metainfo.prop | while read FILE
+          do
+            sed -i '/^#.*UTC/d' "$FILE"
+          done
+
+          find "extracted/${PACKAGE_NAME}" \
+            -name parameters.prop | while read FILE
+          do
+            sed -i '/^#.*UTC/d' "$FILE"
+          done
+
+          echo "Timestamp normalization completed."
+
+      - name: Configure Git with PAT
+        env:
+          GIT_PAT: ${{ secrets.GIT_PAT }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "${{ env.GIT_AUTHOR_NAME }}"
+          git config user.email "${{ env.GIT_AUTHOR_EMAIL }}"
+
+          git remote set-url origin \
+            "https://x-access-token:${GIT_PAT}@github.com/${{ github.repository }}.git"
+
+      - name: Show changed files
+        run: |
+          git status --short
+
+      - name: Commit and push changes
+        env:
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
+        run: |
+          set -euo pipefail
+
+          SIGNIFICANT_CHANGES=$(git status --porcelain \
+            "extracted/${PACKAGE_NAME}" || true)
+
+          if [ -z "$SIGNIFICANT_CHANGES" ]; then
+            echo "No iFlow source changes detected."
+            exit 0
+          fi
+
+          git add -A
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: sync package ${PACKAGE_NAME} from Integration Suite"
+
+          git push origin HEAD:${{ env.TARGET_BRANCH }}
