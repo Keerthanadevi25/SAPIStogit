@@ -1,4 +1,4 @@
-name: Sync Integration Suite package and iFlow to Git
+name: Sync Integration Suite Package to Git
 
 on:
   workflow_dispatch:
@@ -10,7 +10,6 @@ permissions:
 
 env:
   PACKAGE_NAME: "Test_Package"
-  IFLOW_NAME: "Test_Iflow"
 
   GIT_AUTHOR_NAME: "Integration Suite Sync Bot"
   GIT_AUTHOR_EMAIL: "no-reply@example.com"
@@ -23,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout target branch
         uses: actions/checkout@v4
         with:
@@ -56,12 +56,11 @@ jobs:
 
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Download package metadata and iFlow ZIP
+      - name: Download package and all iFlows
         env:
           IS_URL: ${{ secrets.DEV_HOST }}
           ACCESS_TOKEN: ${{ steps.token.outputs.ACCESS_TOKEN }}
           PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
-          IFLOW_NAME: ${{ env.IFLOW_NAME }}
           SYNC_DIR: ${{ env.SYNC_DIR }}
         run: |
           set -euo pipefail
@@ -72,156 +71,4 @@ jobs:
 
           api_get() {
             curl --fail-with-body --silent --show-error \
-              --header "Authorization: Bearer $ACCESS_TOKEN" \
-              --header "Accept: application/json" \
-              "$1"
-          }
-
-          echo "Finding package..."
-
-          LIST_PKGS_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages")"
-
-          PKG_ID="$(printf '%s' "$LIST_PKGS_RESPONSE" | jq -r \
-            --arg name "$PACKAGE_NAME" '
-              .d.results[]
-              | select(.Name==$name)
-              | .Id
-            ' | head -n1)"
-
-          if [ -z "$PKG_ID" ] || [ "$PKG_ID" = "null" ]; then
-            echo "Package not found: $PACKAGE_NAME"
-            exit 1
-          fi
-
-          echo "Package ID: $PKG_ID"
-
-          PKG_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')")"
-
-          printf '%s' "$PKG_RESPONSE" | jq . \
-            > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
-
-          echo "Reading package artifacts..."
-
-          IFLOWS_RESPONSE="$(api_get \
-            "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")"
-
-          printf '%s' "$IFLOWS_RESPONSE" | jq . \
-            > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
-
-          ARTIFACT_ID="$(printf '%s' "$IFLOWS_RESPONSE" | jq -r \
-            --arg name "$IFLOW_NAME" '
-              .d.results[]
-              | select(.Name==$name)
-              | .Id
-            ' | head -n1)"
-
-          if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
-            echo "iFlow not found: $IFLOW_NAME"
-            exit 1
-          fi
-
-          ARTIFACT_VERSION="$(printf '%s' "$IFLOWS_RESPONSE" | jq -r \
-            --arg id "$ARTIFACT_ID" '
-              .d.results[]
-              | select(.Id==$id)
-              | .Version
-            ' | head -n1)"
-
-          echo "Artifact ID: $ARTIFACT_ID"
-          echo "Version: $ARTIFACT_VERSION"
-
-          IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME"
-          mkdir -p "$IFLOW_DIR"
-
-          printf '%s' "$IFLOWS_RESPONSE" | jq \
-            --arg id "$ARTIFACT_ID" '
-              .d.results[]
-              | select(.Id==$id)
-            ' \
-            > "$IFLOW_DIR/${IFLOW_NAME}.json"
-
-          echo "Downloading iFlow ZIP..."
-
-          curl \
-            --fail-with-body \
-            --silent \
-            --show-error \
-            --header "Authorization: Bearer $ACCESS_TOKEN" \
-            --output "$IFLOW_DIR/${IFLOW_NAME}.zip" \
-            "$IS_URL/api/v1/IntegrationDesigntimeArtifacts(Id='$ARTIFACT_ID',Version='$ARTIFACT_VERSION')/\$value"
-
-          if [ ! -f "$IFLOW_DIR/${IFLOW_NAME}.zip" ]; then
-            echo "ZIP download failed."
-            exit 1
-          fi
-
-          echo "ZIP downloaded successfully."
-
-          ls -lh "$IFLOW_DIR"
-              
-      - name: Extract iFlow ZIP
-        run: |
-          EXTRACT_DIR="extracted/${PACKAGE_NAME}/${IFLOW_NAME}"
-
-          rm -rf "$EXTRACT_DIR"
-          mkdir -p "$EXTRACT_DIR"
-
-          unzip -o \
-            "integration-suite-content/${PACKAGE_NAME}/${IFLOW_NAME}.zip" \
-            -d "$EXTRACT_DIR"
-
-          find "$EXTRACT_DIR" -type f | sort     
-
-      - name: Normalize exported files
-        run: |
-          EXTRACT_DIR="extracted/${PACKAGE_NAME}/${IFLOW_NAME}"
-
-          if [ -f "$EXTRACT_DIR/metainfo.prop" ]; then
-            sed -i '/^#.*UTC/d' "$EXTRACT_DIR/metainfo.prop"
-          fi
-
-          if [ -f "$EXTRACT_DIR/src/main/resources/parameters.prop" ]; then
-            sed -i '/^#.*UTC/d' \
-            "$EXTRACT_DIR/src/main/resources/parameters.prop"
-          fi
-
-          echo "Normalized SAP-generated timestamps."    
-      
-      - name: Configure Git with PAT
-        env:
-          GIT_PAT: ${{ secrets.GIT_PAT }}
-        run: |
-          set -euo pipefail
-
-          git config user.name "${{ env.GIT_AUTHOR_NAME }}"
-          git config user.email "${{ env.GIT_AUTHOR_EMAIL }}"
-
-          git remote set-url origin \
-            "https://x-access-token:${GIT_PAT}@github.com/${{ github.repository }}.git"
-      
-         
-      - name: Show changed files
-        run: |
-          git status --short          
-      
-      - name: Commit and push changes
-        run: |
-          set -euo pipefail
-
-          SIGNIFICANT_CHANGES=$(git status --porcelain \
-            "extracted/${PACKAGE_NAME}/${IFLOW_NAME}" || true)
-
-          if [ -z "$SIGNIFICANT_CHANGES" ]; then
-            echo "No iFlow source changes detected."
-            exit 0
-          fi
-
-          git add -A
-
-          if git diff --staged --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
-          git commit -m "chore: sync ${PACKAGE_NAME}/${IFLOW_NAME} from Integration Suite"
-          git push origin HEAD:${{ env.TARGET_BRANCH }}
+              --header "Authorization: 
