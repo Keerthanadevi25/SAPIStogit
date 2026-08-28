@@ -1,0 +1,11 @@
+general:
+2
+productiveBranch: "main"
+3
+ 
+4
+stages:
+5
+Build:
+6
+linting: false
