@@ -8,4 +8,6 @@ stages:
 5
 Build:
 6
-linting: false
+execute:
+7
+- "./.pipeline/verify-content.sh"
