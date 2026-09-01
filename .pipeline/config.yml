@@ -1,13 +1,16 @@
-general:
-2
-productiveBranch: "main"
-3
- 
-4
 stages:
-5
-Build:
-6
-execute:
-7
-- "./.pipeline/verify-content.sh"
+  Prepare:
+    execute:
+      - "./.pipeline/create-package.sh"
+
+  Upload:
+    integrationArtifactUpload:
+      cpiApiServiceKeyCredentialsId: "sapiskey"
+      packageId: "Test_Package"
+      integrationFlowId: "Test_Iflow"
+      filePath: "integration-suite-content/Test_Package/Test_Iflow/Test_Iflow.zip"
+
+  Deploy:
+    integrationArtifactDeploy:
+      cpiApiServiceKeyCredentialsId: "sapiskey"
+      integrationFlowId: "Test_Iflow"
