@@ -11,8 +11,8 @@ permissions:
 env:
   PACKAGE_NAME: "Test_Package"
 
-  GIT_AUTHOR_NAME: "Integration Suite Sync Bot"
-  GIT_AUTHOR_EMAIL: "no-reply@example.com"
+  GIT_AUTHOR_NAME: "Keerthanadevi Natarajan"
+  GIT_AUTHOR_EMAIL: "keerthanadevi.natarajan@distrelec.com"
 
   TARGET_BRANCH: "main"
   SYNC_DIR: "integration-suite-content"
