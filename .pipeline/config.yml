@@ -6,7 +6,7 @@ stages:
   Upload:
     integrationArtifactUpload:
       cpiApiServiceKeyCredentialsId: "sapiskey"
-      packageId: "Test_Package"
+      packageId: "TestPackage"
       integrationFlowId: "Test_Iflow"
       filePath: "integration-suite-content/Test_Package/Test_Iflow/Test_Iflow.zip"
 
