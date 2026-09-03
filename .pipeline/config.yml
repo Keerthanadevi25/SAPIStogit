@@ -1,6 +1,10 @@
 stages:
   Upload:
     enabled: true
+
   Deploy:
     enabled: true
+
+  'Integration Test':
+    enabled: false
     
