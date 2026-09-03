@@ -11,7 +11,10 @@ stages:
 steps:
   integrationArtifactUpload:
     cpiApiServiceKeyCredentialsId: "sapiskey"
+    packageId: "DemoPackage"
+    integrationFlowId: "Demo_iflow"
 
   integrationArtifactDeploy:
     cpiApiServiceKeyCredentialsId: "sapiskey"
+    integrationFlowId: "Demo_iflow"
     
