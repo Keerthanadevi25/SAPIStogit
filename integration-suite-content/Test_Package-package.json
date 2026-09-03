@@ -1,27 +1,27 @@
 {
   "d": {
     "__metadata": {
-      "id": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')",
-      "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')",
+      "id": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')",
+      "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')",
       "type": "com.sap.hci.api.IntegrationPackage",
       "content_type": "application/octet-stream",
-      "media_src": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/$value",
-      "edit_media": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/$value"
+      "media_src": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/$value",
+      "edit_media": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/$value"
     },
     "Id": "TestPackage",
     "Name": "Test_Package",
-    "ResourceId": "d078c422a752453c86f210b220984fc5",
+    "ResourceId": "bfe84b2212e3437b9afd6fa05a5825cb",
     "Description": "<p></p>",
-    "ShortText": "Test package to test the CI/CD",
-    "Version": "",
+    "ShortText": "Test_Package",
+    "Version": "1.0.0",
     "Vendor": "",
     "PartnerContent": false,
     "UpdateAvailable": false,
     "Mode": "EDIT_ALLOWED",
     "SupportedPlatform": "Cloud Integration",
     "ModifiedBy": "keerthanadevi.natarajan@distrelec.com",
-    "CreationDate": "1786355948786",
-    "ModifiedDate": "1786355948796",
+    "CreationDate": "1788367633802",
+    "ModifiedDate": "1788368076109",
     "CreatedBy": "keerthanadevi.natarajan@distrelec.com",
     "Products": "",
     "Keywords": "",
@@ -31,47 +31,47 @@
     "PackageContent": null,
     "IntegrationDesigntimeArtifacts": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/IntegrationDesigntimeArtifacts"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/IntegrationDesigntimeArtifacts"
       }
     },
     "ValueMappingDesigntimeArtifacts": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/ValueMappingDesigntimeArtifacts"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/ValueMappingDesigntimeArtifacts"
       }
     },
     "MessageMappingDesigntimeArtifacts": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/MessageMappingDesigntimeArtifacts"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/MessageMappingDesigntimeArtifacts"
       }
     },
     "ScriptCollectionDesigntimeArtifacts": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/ScriptCollectionDesigntimeArtifacts"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/ScriptCollectionDesigntimeArtifacts"
       }
     },
     "DataTypeDesigntimeArtifacts": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/DataTypeDesigntimeArtifacts"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/DataTypeDesigntimeArtifacts"
       }
     },
     "MessageTypeDesigntimeArtifacts": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/MessageTypeDesigntimeArtifacts"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/MessageTypeDesigntimeArtifacts"
       }
     },
     "FaultMessageTypeDesigntimeArtifacts": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/FaultMessageTypeDesigntimeArtifacts"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/FaultMessageTypeDesigntimeArtifacts"
       }
     },
     "ServiceInterfaceDesigntimeArtifacts": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/ServiceInterfaceDesigntimeArtifacts"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/ServiceInterfaceDesigntimeArtifacts"
       }
     },
     "CustomTags": {
       "__deferred": {
-        "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/CustomTags"
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('TestPackage')/CustomTags"
       }
     }
   }

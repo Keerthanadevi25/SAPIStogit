@@ -3,77 +3,39 @@
     "results": [
       {
         "__metadata": {
-          "id": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow',Version='Active')",
-          "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow',Version='Active')",
+          "id": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_iflow',Version='Active')",
+          "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_iflow',Version='Active')",
           "type": "com.sap.hci.api.IntegrationDesigntimeArtifact",
           "content_type": "application/octet-stream",
-          "media_src": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow',Version='Active')/$value",
-          "edit_media": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow',Version='Active')/$value"
+          "media_src": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_iflow',Version='Active')/$value",
+          "edit_media": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_iflow',Version='Active')/$value"
         },
-        "Id": "Test_Iflow",
+        "Id": "Test_iflow",
         "Version": "Active",
         "PackageId": "TestPackage",
-        "Name": "Test_Iflow",
-        "Description": "Test Iflow for CI/CD",
-        "Sender": null,
-        "Receiver": null,
-        "CreatedBy": "keerthanadevi.natarajan@distrelec.com",
-        "CreatedAt": "1786355989306",
-        "ModifiedBy": "keerthanadevi.natarajan@distrelec.com",
-        "ModifiedAt": "1787239211910",
-        "ArtifactContent": null,
-        "Comment": null,
-        "Configurations": {
-          "__deferred": {
-            "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow',Version='Active')/Configurations"
-          }
-        },
-        "Resources": {
-          "__deferred": {
-            "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow',Version='Active')/Resources"
-          }
-        },
-        "DesignGuidelineExecutionResults": {
-          "__deferred": {
-            "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow',Version='Active')/DesignGuidelineExecutionResults"
-          }
-        }
-      },
-      {
-        "__metadata": {
-          "id": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow1',Version='Active')",
-          "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow1',Version='Active')",
-          "type": "com.sap.hci.api.IntegrationDesigntimeArtifact",
-          "content_type": "application/octet-stream",
-          "media_src": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow1',Version='Active')/$value",
-          "edit_media": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow1',Version='Active')/$value"
-        },
-        "Id": "Test_Iflow1",
-        "Version": "Active",
-        "PackageId": "TestPackage",
-        "Name": "Test_Iflow1",
+        "Name": "Test_iflow",
         "Description": "",
         "Sender": null,
         "Receiver": null,
         "CreatedBy": "keerthanadevi.natarajan@distrelec.com",
-        "CreatedAt": "1787319718179",
+        "CreatedAt": "1788368152425",
         "ModifiedBy": "keerthanadevi.natarajan@distrelec.com",
-        "ModifiedAt": "1787319736076",
+        "ModifiedAt": "1788368665223",
         "ArtifactContent": null,
         "Comment": null,
         "Configurations": {
           "__deferred": {
-            "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow1',Version='Active')/Configurations"
+            "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_iflow',Version='Active')/Configurations"
           }
         },
         "Resources": {
           "__deferred": {
-            "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow1',Version='Active')/Resources"
+            "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_iflow',Version='Active')/Resources"
           }
         },
         "DesignGuidelineExecutionResults": {
           "__deferred": {
-            "uri": "https://90cfb10ftrial.it-cpitrial05.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_Iflow1',Version='Active')/DesignGuidelineExecutionResults"
+            "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Test_iflow',Version='Active')/DesignGuidelineExecutionResults"
           }
         }
       }
