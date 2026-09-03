@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  PACKAGE_NAME: "Test_Package"
+  PACKAGE_NAME: "Demo_Package"
 
   GIT_AUTHOR_NAME: "Keerthanadevi Natarajan"
   GIT_AUTHOR_EMAIL: "keerthanadevi.natarajan@distrelec.com"
