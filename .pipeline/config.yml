@@ -6,11 +6,11 @@ stages:
   Upload:
     integrationArtifactUpload:
       cpiApiServiceKeyCredentialsId: "sapiskey"
-      packageId: "TestPackage"
-      integrationFlowId: "Test_Iflow"
-      filePath: "integration-suite-content/Test_Package/Test_Iflow/Test_Iflow.zip"
+      packageId: "DemoPackage"
+      integrationFlowId: "Demo_iflow"
+      filePath: "integration-suite-content/Demo_Package/Demo_iflow/Demo_iflow.zip"
 
   Deploy:
     integrationArtifactDeploy:
       cpiApiServiceKeyCredentialsId: "sapiskey"
-      integrationFlowId: "Test_Iflow"
+      integrationFlowId: "Demo_iflow"
