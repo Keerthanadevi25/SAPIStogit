@@ -7,4 +7,11 @@ stages:
 
   'Integration Test':
     enabled: false
+
+steps:
+  integrationArtifactUpload:
+    cpiApiServiceKeyCredentialsId: "sapiskey"
+
+  integrationArtifactDeploy:
+    cpiApiServiceKeyCredentialsId: "sapiskey"
     
