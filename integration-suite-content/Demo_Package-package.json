@@ -1,0 +1,78 @@
+{
+  "d": {
+    "__metadata": {
+      "id": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')",
+      "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')",
+      "type": "com.sap.hci.api.IntegrationPackage",
+      "content_type": "application/octet-stream",
+      "media_src": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/$value",
+      "edit_media": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/$value"
+    },
+    "Id": "DemoPackage",
+    "Name": "Demo_Package",
+    "ResourceId": "a6711d582ce24f2ba917c144b1d578fd",
+    "Description": "<p></p>",
+    "ShortText": "Demo Package",
+    "Version": "",
+    "Vendor": "",
+    "PartnerContent": false,
+    "UpdateAvailable": false,
+    "Mode": "EDIT_ALLOWED",
+    "SupportedPlatform": "Cloud Integration",
+    "ModifiedBy": "keerthanadevi.natarajan@distrelec.com",
+    "CreationDate": "1788414586848",
+    "ModifiedDate": "1788414586857",
+    "CreatedBy": "keerthanadevi.natarajan@distrelec.com",
+    "Products": "",
+    "Keywords": "",
+    "Countries": "",
+    "Industries": "",
+    "LineOfBusiness": "",
+    "PackageContent": null,
+    "IntegrationDesigntimeArtifacts": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/IntegrationDesigntimeArtifacts"
+      }
+    },
+    "ValueMappingDesigntimeArtifacts": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/ValueMappingDesigntimeArtifacts"
+      }
+    },
+    "MessageMappingDesigntimeArtifacts": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/MessageMappingDesigntimeArtifacts"
+      }
+    },
+    "ScriptCollectionDesigntimeArtifacts": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/ScriptCollectionDesigntimeArtifacts"
+      }
+    },
+    "DataTypeDesigntimeArtifacts": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/DataTypeDesigntimeArtifacts"
+      }
+    },
+    "MessageTypeDesigntimeArtifacts": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/MessageTypeDesigntimeArtifacts"
+      }
+    },
+    "FaultMessageTypeDesigntimeArtifacts": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/FaultMessageTypeDesigntimeArtifacts"
+      }
+    },
+    "ServiceInterfaceDesigntimeArtifacts": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/ServiceInterfaceDesigntimeArtifacts"
+      }
+    },
+    "CustomTags": {
+      "__deferred": {
+        "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationPackages('DemoPackage')/CustomTags"
+      }
+    }
+  }
+}

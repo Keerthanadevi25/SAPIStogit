@@ -1,0 +1,38 @@
+{
+  "__metadata": {
+    "id": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo_iflow',Version='Active')",
+    "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo_iflow',Version='Active')",
+    "type": "com.sap.hci.api.IntegrationDesigntimeArtifact",
+    "content_type": "application/octet-stream",
+    "media_src": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo_iflow',Version='Active')/$value",
+    "edit_media": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo_iflow',Version='Active')/$value"
+  },
+  "Id": "Demo_iflow",
+  "Version": "Active",
+  "PackageId": "DemoPackage",
+  "Name": "Demo_iflow",
+  "Description": "Demo_iflow",
+  "Sender": null,
+  "Receiver": null,
+  "CreatedBy": "keerthanadevi.natarajan@distrelec.com",
+  "CreatedAt": "1788414612193",
+  "ModifiedBy": "keerthanadevi.natarajan@distrelec.com",
+  "ModifiedAt": "1788414667920",
+  "ArtifactContent": null,
+  "Comment": null,
+  "Configurations": {
+    "__deferred": {
+      "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo_iflow',Version='Active')/Configurations"
+    }
+  },
+  "Resources": {
+    "__deferred": {
+      "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo_iflow',Version='Active')/Resources"
+    }
+  },
+  "DesignGuidelineExecutionResults": {
+    "__deferred": {
+      "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo_iflow',Version='Active')/DesignGuidelineExecutionResults"
+    }
+  }
+}
