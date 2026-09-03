@@ -1,3 +1,6 @@
+general:
+  verbose: true
+
 stages:
   Upload:
     enabled: true
@@ -17,4 +20,3 @@ steps:
   integrationArtifactDeploy:
     cpiApiServiceKeyCredentialsId: "sapiskey"
     integrationFlowId: "Demo_iflow"
-    
