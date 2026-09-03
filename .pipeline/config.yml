@@ -1,8 +1,4 @@
 stages:
-  Prepare:
-    execute:
-      - "./.pipeline/create-package.sh"
-
   Upload:
     integrationArtifactUpload:
       cpiApiServiceKeyCredentialsId: "sapiskey"
