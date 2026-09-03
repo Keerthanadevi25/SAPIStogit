@@ -182,7 +182,26 @@ jobs:
           done
 
           echo "Timestamp normalization completed."
+      - name: Create deployable iFlow ZIP
+        env:
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
+        run: |
+          set -euo pipefail
 
+          mkdir -p build
+
+          cd extracted/${PACKAGE_NAME}/Demo_iflow
+
+          zip -r ../../../build/Demo_iflow.zip .
+
+          cd -
+
+          unzip -l build/Demo_iflow.zip
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Demo_iflow-zip
+          path: build/Demo_iflow.zip
       - name: Configure Git with PAT
         env:
           GIT_PAT: ${{ secrets.GIT_PAT }}
