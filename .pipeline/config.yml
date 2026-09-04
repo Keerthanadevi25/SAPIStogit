@@ -1,22 +1,5 @@
-general:
-  verbose: true
-
-stages:
-  Upload:
-    enabled: true
-
-  Deploy:
-    enabled: true
-
-  'Integration Test':
-    enabled: false
-
 steps:
   integrationArtifactUpload:
-    cpiApiServiceKeyCredentialsId: "sapiskey"
-    packageId: "DemoPackage"
-    integrationFlowId: "Demo_iflow"
-
-  integrationArtifactDeploy:
-    cpiApiServiceKeyCredentialsId: "sapiskey"
-    integrationFlowId: "Demo_iflow"
+    filePath: 'extracted/Demo_Package/Demo_iflow'
+    integrationFlowId: 'Demo_iflow'
+    integrationPackageId: 'DemoPackage'
