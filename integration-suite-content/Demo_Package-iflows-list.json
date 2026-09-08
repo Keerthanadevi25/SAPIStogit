@@ -38,6 +38,44 @@
             "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo_iflow',Version='Active')/DesignGuidelineExecutionResults"
           }
         }
+      },
+      {
+        "__metadata": {
+          "id": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo-iflow1',Version='Active')",
+          "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo-iflow1',Version='Active')",
+          "type": "com.sap.hci.api.IntegrationDesigntimeArtifact",
+          "content_type": "application/octet-stream",
+          "media_src": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo-iflow1',Version='Active')/$value",
+          "edit_media": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo-iflow1',Version='Active')/$value"
+        },
+        "Id": "Demo-iflow1",
+        "Version": "Active",
+        "PackageId": "DemoPackage",
+        "Name": "Demo-iflow1",
+        "Description": "Demo-iflow1",
+        "Sender": null,
+        "Receiver": null,
+        "CreatedBy": "keerthanadevi.natarajan@distrelec.com",
+        "CreatedAt": "1788860474396",
+        "ModifiedBy": "keerthanadevi.natarajan@distrelec.com",
+        "ModifiedAt": "1788860515024",
+        "ArtifactContent": null,
+        "Comment": null,
+        "Configurations": {
+          "__deferred": {
+            "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo-iflow1',Version='Active')/Configurations"
+          }
+        },
+        "Resources": {
+          "__deferred": {
+            "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo-iflow1',Version='Active')/Resources"
+          }
+        },
+        "DesignGuidelineExecutionResults": {
+          "__deferred": {
+            "uri": "https://4056c4bctrial.it-cpitrial06.cfapps.us10-001.hana.ondemand.com:443/api/v1/IntegrationDesigntimeArtifacts(Id='Demo-iflow1',Version='Active')/DesignGuidelineExecutionResults"
+          }
+        }
       }
     ]
   }
