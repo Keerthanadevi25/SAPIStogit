@@ -1,0 +1,185 @@
+name: Deploy Integration Suite Content to QA
+
+# Every push to main is checked for changed iFlows under extracted/, and
+# each one that changed is uploaded and deployed to the QA tenant.
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "extracted/**"
+
+permissions:
+  contents: read
+
+env:
+  EXTRACTED_DIR: "extracted"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # need previous commit to diff changed folders
+
+      - name: Get OAuth token (QA tenant)
+        id: token
+        env:
+          TOKEN_URL: ${{ secrets.QA_TOKEN_URL }}
+          CLIENT_ID: ${{ secrets.QA_CLIENT_ID }}
+          CLIENT_SECRET_B64: ${{ secrets.QA_CLIENT_SECRET_B64 }}
+        run: |
+          set -euo pipefail
+          CLIENT_SECRET="$(printf '%s' "$CLIENT_SECRET_B64" | base64 --decode)"
+          RESPONSE="$(curl --fail-with-body --silent --show-error \
+            --request POST "${TOKEN_URL}?grant_type=client_credentials" \
+            --user "${CLIENT_ID}:${CLIENT_SECRET}" \
+            --header "Accept: application/json")"
+          ACCESS_TOKEN="$(printf '%s' "$RESPONSE" | jq -r '.access_token // empty')"
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain OAuth token."
+            exit 1
+          fi
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Discover changed iFlows in this push
+        env:
+          EXTRACTED_DIR: ${{ env.EXTRACTED_DIR }}
+        run: |
+          set -euo pipefail
+
+          # Compare against the previous commit. On the very first run
+          # (no previous commit to diff against), deploy everything found.
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED_PATHS="$(git diff --name-only HEAD~1 HEAD -- "$EXTRACTED_DIR" || true)"
+          else
+            CHANGED_PATHS="$(find "$EXTRACTED_DIR" -mindepth 3 -maxdepth 3 -name META-INF -printf '%h\n' || true)"
+          fi
+
+          # Reduce file paths down to unique <package>/<iflow> folders
+          echo "$CHANGED_PATHS" | awk -F/ 'NF>=3 {print $1"/"$2"/"$3}' | sort -u > changed_folders.txt
+
+          echo "iFlows changed in this push:"
+          cat changed_folders.txt || true
+
+          if [ ! -s changed_folders.txt ]; then
+            echo "No iFlow changes detected — nothing to deploy."
+          fi
+
+      - name: Upload and deploy each changed iFlow
+        env:
+          IS_URL: ${{ secrets.QA_HOST }}
+          ACCESS_TOKEN: ${{ steps.token.outputs.ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -s changed_folders.txt ]; then
+            exit 0
+          fi
+
+          IS_URL="${IS_URL%/}"
+          API="$IS_URL/api/v1"
+
+          auth_get() {
+            curl --silent --show-error \
+              --header "Authorization: Bearer $ACCESS_TOKEN" \
+              --header "Accept: application/json" \
+              --write-out '\n%{http_code}' "$1"
+          }
+
+          auth_write() {
+            curl --silent --show-error --request "$1" "$2" \
+              --header "Authorization: Bearer $ACCESS_TOKEN" \
+              --header "Content-Type: application/json" \
+              --header "Accept: application/json" \
+              --data @"$3" --write-out '\n%{http_code}'
+          }
+
+          wait_for_deployment() {
+            local id="$1" attempt=0 max_attempts=20 status
+            while [ $attempt -lt $max_attempts ]; do
+              status="$(auth_get "$API/IntegrationRuntimeArtifacts('$id')" | tail -n2 | head -n1 \
+                | jq -r '.d.Status // empty' 2>/dev/null || true)"
+              [ "$status" = "STARTED" ] && { echo "  -> Deployed and started."; return 0; }
+              [ "$status" = "ERROR" ] && { echo "  -> Deployment reported ERROR status."; return 1; }
+              attempt=$((attempt + 1))
+              sleep 6
+            done
+            echo "  -> Timed out waiting for deployment to reach STARTED."
+            return 1
+          }
+
+          FAILED=0
+
+          while read -r FOLDER; do
+            [ -z "$FOLDER" ] && continue
+
+            PKG_ID="$(echo "$FOLDER" | cut -d/ -f2)"
+            IFLOW_ID="$(echo "$FOLDER" | cut -d/ -f3)"
+            SRC_PATH="$FOLDER"
+
+            echo "=========================================="
+            echo "Deploying: $IFLOW_ID (Package=$PKG_ID) to QA"
+            echo "=========================================="
+
+            mkdir -p build
+            ZIP="build/${IFLOW_ID}.zip"
+            rm -f "$ZIP"
+            (cd "$SRC_PATH" && zip -r -X "$OLDPWD/$ZIP" . -x "*.DS_Store")
+
+            ARTIFACT_CONTENT="$(base64 -w0 "$ZIP")"
+
+            # Check whether the iFlow already exists on the target tenant
+            RESULT="$(auth_get "$API/IntegrationDesigntimeArtifacts(Id='$IFLOW_ID',Version='Active')")"
+            HTTP_CODE="$(echo "$RESULT" | tail -n1)"
+            PAYLOAD_FILE="$(mktemp)"
+
+            if [ "$HTTP_CODE" = "404" ]; then
+              echo "iFlow does not exist yet — creating."
+              jq -n --arg id "$IFLOW_ID" --arg name "$IFLOW_ID" --arg pkg "$PKG_ID" --arg content "$ARTIFACT_CONTENT" \
+                '{Id: $id, Name: $name, PackageId: $pkg, ArtifactContent: $content}' > "$PAYLOAD_FILE"
+              RESP="$(auth_write POST "$API/IntegrationDesigntimeArtifacts" "$PAYLOAD_FILE")"
+              CODE="$(echo "$RESP" | tail -n1)"
+              if [ "$CODE" != "201" ] && [ "$CODE" != "200" ]; then
+                echo "Create failed (HTTP $CODE):"; echo "$RESP"; FAILED=1; continue
+              fi
+
+            elif [ "$HTTP_CODE" = "200" ]; then
+              echo "iFlow exists — updating."
+              jq -n --arg name "$IFLOW_ID" --arg pkg "$PKG_ID" --arg content "$ARTIFACT_CONTENT" \
+                '{Name: $name, PackageId: $pkg, ArtifactContent: $content}' > "$PAYLOAD_FILE"
+              RESP="$(auth_write PUT "$API/IntegrationDesigntimeArtifacts(Id='$IFLOW_ID',Version='Active')" "$PAYLOAD_FILE")"
+              CODE="$(echo "$RESP" | tail -n1)"
+              if [ "$CODE" != "200" ] && [ "$CODE" != "204" ]; then
+                echo "Update failed (HTTP $CODE):"; echo "$RESP"; FAILED=1; continue
+              fi
+
+            else
+              echo "Unexpected status HTTP $HTTP_CODE checking $IFLOW_ID"
+              echo "$RESULT"
+              FAILED=1
+              continue
+            fi
+            rm -f "$PAYLOAD_FILE"
+
+            # Trigger deployment of the uploaded (Active) version
+            echo "Triggering deployment..."
+            DEPLOY_RESP="$(curl --silent --show-error --request POST \
+              --header "Authorization: Bearer $ACCESS_TOKEN" \
+              --header "Accept: application/json" \
+              --write-out '\n%{http_code}' \
+              "$API/DeployIntegrationDesigntimeArtifact?Id='$IFLOW_ID'&Version='active'")"
+            DEPLOY_CODE="$(echo "$DEPLOY_RESP" | tail -n1)"
+            if [ "$DEPLOY_CODE" != "202" ] && [ "$DEPLOY_CODE" != "200" ]; then
+              echo "Deploy trigger failed (HTTP $DEPLOY_CODE):"; echo "$DEPLOY_RESP"; FAILED=1; continue
+            fi
+
+            wait_for_deployment "$IFLOW_ID" || FAILED=1
+
+          done < changed_folders.txt
+
+          exit $FAILED
