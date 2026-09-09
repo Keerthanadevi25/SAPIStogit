@@ -1,224 +1,4 @@
-name: Sync Integration Suite Package to Git
-
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 2 * * *"
-
-permissions:
-  contents: read
-
-env:
-  PACKAGE_NAME: "Demo_Package"
-
-  GIT_AUTHOR_NAME: "Keerthanadevi Natarajan"
-  GIT_AUTHOR_EMAIL: "keerthanadevi.natarajan@distrelec.com"
-
-  TARGET_BRANCH: "main"
-  SYNC_DIR: "integration-suite-content"
-
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Checkout target branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TARGET_BRANCH }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Get OAuth token
-        id: token
-        env:
-          TOKEN_URL: ${{ secrets.DEV_TOKEN_URL }}
-          CLIENT_ID: ${{ secrets.DEV_CLIENT_ID }}
-          CLIENT_SECRET_B64: ${{ secrets.DEV_CLIENT_SECRET_B64 }}
-        run: |
-          set -euo pipefail
-
-          CLIENT_SECRET="$(printf '%s' "$CLIENT_SECRET_B64" | base64 --decode)"
-
-          RESPONSE="$(curl --fail-with-body --silent --show-error \
-            --request POST \
-            "${TOKEN_URL}?grant_type=client_credentials" \
-            --user "${CLIENT_ID}:${CLIENT_SECRET}" \
-            --header "Accept: application/json")"
-
-          ACCESS_TOKEN="$(printf '%s' "$RESPONSE" | jq -r '.access_token // empty')"
-
-          if [ -z "$ACCESS_TOKEN" ]; then
-            echo "Failed to obtain OAuth token."
-            exit 1
-          fi
-
-          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
-
-      - name: Download package and all iFlows
-        env:
-          IS_URL: ${{ secrets.DEV_HOST }}
-          ACCESS_TOKEN: ${{ steps.token.outputs.ACCESS_TOKEN }}
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
-          SYNC_DIR: ${{ env.SYNC_DIR }}
-        run: |
-          set -euo pipefail
-
-          IS_URL="${IS_URL%/}"
-
-          mkdir -p "$SYNC_DIR"
-
-          api_get() {
-            curl --fail-with-body --silent --show-error \
-              --header "Authorization: Bearer $ACCESS_TOKEN" \
-              --header "Accept: application/json" \
-              "$1"
-          }
-
-          echo "Finding package..."
-
-          LIST_PKGS_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages")"
-
-          PKG_ID="$(printf '%s' "$LIST_PKGS_RESPONSE" | jq -r \
-            --arg name "$PACKAGE_NAME" '
-              .d.results[]
-              | select(.Name==$name)
-              | .Id
-            ' | head -n1)"
-
-          if [ -z "$PKG_ID" ] || [ "$PKG_ID" = "null" ]; then
-            echo "Package not found: $PACKAGE_NAME"
-            exit 1
-          fi
-
-          echo "Package ID: $PKG_ID"
-
-          PKG_RESPONSE="$(api_get "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')")"
-
-          printf '%s' "$PKG_RESPONSE" | jq . \
-            > "$SYNC_DIR/${PACKAGE_NAME}-package.json"
-
-          echo "Reading package artifacts..."
-
-          IFLOWS_RESPONSE="$(api_get \
-            "$IS_URL/api/v1/IntegrationPackages('$PKG_ID')/IntegrationDesigntimeArtifacts")"
-
-          printf '%s' "$IFLOWS_RESPONSE" | jq . \
-            > "$SYNC_DIR/${PACKAGE_NAME}-iflows-list.json"
-
-          printf '%s' "$IFLOWS_RESPONSE" | jq -c '.d.results[]' | \
-          while read -r IFLOW
-          do
-
-            IFLOW_NAME="$(echo "$IFLOW" | jq -r '.Name')"
-            ARTIFACT_ID="$(echo "$IFLOW" | jq -r '.Id')"
-            ARTIFACT_VERSION="$(echo "$IFLOW" | jq -r '.Version')"
-
-            echo "----------------------------------------"
-            echo "Processing: $IFLOW_NAME"
-            echo "Artifact ID: $ARTIFACT_ID"
-            echo "Version: $ARTIFACT_VERSION"
-
-            IFLOW_DIR="$SYNC_DIR/$PACKAGE_NAME/$IFLOW_NAME"
-
-            mkdir -p "$IFLOW_DIR"
-
-            echo "$IFLOW" | jq . \
-              > "$IFLOW_DIR/${IFLOW_NAME}.json"
-
-            curl \
-              --fail-with-body \
-              --silent \
-              --show-error \
-              --header "Authorization: Bearer $ACCESS_TOKEN" \
-              --output "$IFLOW_DIR/${IFLOW_NAME}.zip" \
-              "$IS_URL/api/v1/IntegrationDesigntimeArtifacts(Id='$ARTIFACT_ID',Version='$ARTIFACT_VERSION')/\$value"
-
-            if [ ! -f "$IFLOW_DIR/${IFLOW_NAME}.zip" ]; then
-              echo "ZIP download failed for $IFLOW_NAME"
-              exit 1
-            fi
-
-          done
-
-      - name: Extract all iFlows
-        env:
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
-        run: |
-          set -euo pipefail
-
-          find "integration-suite-content/${PACKAGE_NAME}" \
-            -name "*.zip" | while read ZIP
-          do
-            IFLOW_NAME=$(basename "$ZIP" .zip)
-
-            EXTRACT_DIR="extracted/${PACKAGE_NAME}/${IFLOW_NAME}"
-
-            rm -rf "$EXTRACT_DIR"
-            mkdir -p "$EXTRACT_DIR"
-
-            unzip -o "$ZIP" -d "$EXTRACT_DIR" > /dev/null
-
-            echo "Extracted: $IFLOW_NAME"
-          done
-
-      - name: Normalize exported files
-        env:
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
-        run: |
-          set -euo pipefail
-
-          find "extracted/${PACKAGE_NAME}" \
-            -name metainfo.prop | while read FILE
-          do
-            sed -i '/^#.*UTC/d' "$FILE"
-          done
-
-          find "extracted/${PACKAGE_NAME}" \
-            -name parameters.prop | while read FILE
-          do
-            sed -i '/^#.*UTC/d' "$FILE"
-          done
-
-          echo "Timestamp normalization completed."
-      - name: Create deployable iFlow ZIP
-        env:
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
-        run: |
-          set -euo pipefail
-
-          mkdir -p build
-
-          cd extracted/${PACKAGE_NAME}/Demo_iflow
-
-          zip -r ../../../build/Demo_iflow.zip .
-
-          cd -
-
-          unzip -l build/Demo_iflow.zip
-      - name: Upload ZIP artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Demo_iflow-zip
-          path: build/Demo_iflow.zip
-      - name: Configure Git with PAT
-        env:
-          GIT_PAT: ${{ secrets.GIT_PAT }}
-        run: |
-          set -euo pipefail
-
-          git config user.name "${{ env.GIT_AUTHOR_NAME }}"
-          git config user.email "${{ env.GIT_AUTHOR_EMAIL }}"
-
-          git remote set-url origin \
-            "https://x-access-token:${GIT_PAT}@github.com/${{ github.repository }}.git"
-
-      - name: Show changed files
-        run: |
-          git status --short
-
-      - name: Commit and push changes
+- name: Commit and push changes
         env:
           PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
         run: |
@@ -239,6 +19,53 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore: sync package ${PACKAGE_NAME} from Integration Suite"
+          # --- Build a human-readable summary, split into two buckets ---
+          # Bucket 1: the actual logic — flow definitions and scripts
+          FLOW_CHANGES="$(git diff --staged --stat -- '*.iflw' '*.groovy' '*.mmap' '*.xsl' '*.xslt' || true)"
+
+          # Bucket 2: everything else — CPI's auto-regenerated metadata
+          OTHER_CHANGES="$(git diff --staged --stat -- . \
+            ':!*.iflw' ':!*.groovy' ':!*.mmap' ':!*.xsl' ':!*.xslt' || true)"
+
+          echo "=========================================="
+          echo "Flow / script changes (the real content):"
+          echo "=========================================="
+          if [ -n "$FLOW_CHANGES" ]; then
+            echo "$FLOW_CHANGES"
+          else
+            echo "(none — only metadata changed this run)"
+          fi
+          echo ""
+          echo "=========================================="
+          echo "Metadata-only changes (expected noise):"
+          echo "=========================================="
+          if [ -n "$OTHER_CHANGES" ]; then
+            echo "$OTHER_CHANGES"
+          else
+            echo "(none)"
+          fi
+
+          # --- Build the commit message body from the same two buckets ---
+          COMMIT_MSG_FILE="$(mktemp)"
+          {
+            echo "chore: sync package ${PACKAGE_NAME} from Integration Suite"
+            echo ""
+            echo "Flow/script changes:"
+            if [ -n "$FLOW_CHANGES" ]; then
+              echo "$FLOW_CHANGES"
+            else
+              echo "(none — metadata only)"
+            fi
+            echo ""
+            echo "Metadata-only changes:"
+            if [ -n "$OTHER_CHANGES" ]; then
+              echo "$OTHER_CHANGES"
+            else
+              echo "(none)"
+            fi
+          } > "$COMMIT_MSG_FILE"
+
+          git commit -F "$COMMIT_MSG_FILE"
+          rm -f "$COMMIT_MSG_FILE"
 
           git push origin HEAD:${{ env.TARGET_BRANCH }}
